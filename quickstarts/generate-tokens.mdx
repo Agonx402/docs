@@ -1,0 +1,62 @@
+---
+title: "Generate Payment Tokens"
+description: "Create secure, single-use and budgeted authorization tokens for API calls."
+---
+
+Consumer tokens are short-lived JWTs used to authorize API calls. Your raw `api_key` is never sent to a merchant.
+
+## Token Modes
+
+| Mode | `budget` field | Behavior |
+|---|---|---|
+| **Strict Single-Use** | Omit | Burned on first `/authorize` call |
+| **Multi-Use Budgeted** | Include | Reusable until cumulative spend hits budget ceiling |
+
+<Tip>
+  Budget enforcement is atomic — the Postgres `authorize_payment` procedure uses a `SELECT … FOR UPDATE` lock to prevent race conditions under concurrent load.
+</Tip>
+
+## Strategies
+
+<Tabs>
+  <Tab title="A — Strict Single-Use">
+    ```typescript
+    // Exact cost known — maximum security
+    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
+      body: JSON.stringify({ ttl: 60, max_amount: 10_000 }),
+    }).then(r => r.json())
+    ```
+  </Tab>
+  <Tab title="B — Time-Constrained">
+    ```typescript
+    // Cost unknown, task completes quickly
+    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
+      body: JSON.stringify({ ttl: 5, budget: 500_000 }), // 5s window, $0.50 ceiling
+    }).then(r => r.json())
+    ```
+  </Tab>
+  <Tab title="C — Budget-Constrained">
+    ```typescript
+    // Duration variable, spend must stay bounded
+    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
+      body: JSON.stringify({ ttl: 300, budget: 20_000 }), // 5 min runway, $0.02 cap
+    }).then(r => r.json())
+    ```
+  </Tab>
+  <Tab title="D — Time + Budget (recommended)">
+    ```typescript
+    // Variable workloads — both time and spend bounded
+    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
+      body: JSON.stringify({ ttl: 60, budget: 50_000 }), // 60s window, $0.05 max
+    }).then(r => r.json())
+    ```
+  </Tab>
+</Tabs>

@@ -1,33 +1,31 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API Reference"
+description: "Full REST API reference for the Agon payment aggregator — base URL, authentication, and all endpoints."
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
-
-## Welcome
-
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+Base URL: `https://agonbackend-devnet.up.railway.app`
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+| Header | Used by | Purpose |
+|---|---|---|
+| `X-AGON-KEY: ag_xxx` | Consumer | Account management, token creation |
+| `X-AGON-TOKEN: eyJ...` | Consumer | Short-lived payment JWT sent to merchants |
+| `Authorization: Bearer pk_xxx` | Merchant | Authorization endpoints |
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
-```
+## Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Accounts" icon="user" href="/api-reference/accounts">
+    Registration, balances, deposits, withdrawals, spending controls, auto-refill.
+  </Card>
+  <Card title="Authorization" icon="lock" href="/api-reference/authorization">
+    /authorize, /consume, /release — the merchant payment cycle.
+  </Card>
+  <Card title="Platforms" icon="server" href="/api-reference/platforms">
+    Platform registration, settlement triggers, and settlement history.
+  </Card>
+  <Card title="Error Codes" icon="triangle-exclamation" href="/api-reference/error-codes">
+    All error codes, HTTP statuses, and their meanings.
+  </Card>
+</CardGroup>

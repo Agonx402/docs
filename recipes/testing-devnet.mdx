@@ -1,0 +1,77 @@
+---
+title: "Testing on Devnet"
+description: "Test end-to-end payment flows on Solana devnet without spending real USDC."
+---
+
+Test end-to-end payment flows without spending real USDC.
+
+## Environment Setup
+
+```bash
+# Get devnet SOL for transaction fees
+solana airdrop 2 --url devnet
+
+# Get devnet USDC via Agon's built-in faucet (100 USDC, once per week)
+# Run after registering your account — see "Run Demo Suite" below
+```
+
+```bash
+# .env file
+SOLANA_RPC_URL=https://api.devnet.solana.com
+USDC_MINT=Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
+AGON_BASE_URL=https://agonbackend-devnet.up.railway.app
+```
+
+## Run Demo Suite
+
+```bash
+# Terminal 1 — merchant platform
+cd agon-demo && npm run platform
+
+# Terminal 2 — register agent and claim devnet USDC
+cd agon-demo && npm run agent   # registers + prints credentials
+cd agon-demo && npm run faucet  # claims 100 devnet USDC (once/week)
+
+# Terminal 3 — consumer or agent demo
+cd agon-demo && npm run consumer
+cd agon-demo && npm run agent
+```
+
+<Tabs>
+  <Tab title="faucet">
+    Claims 100 devnet USDC directly into your Agon balance. Requires `AGON_API_KEY` or `AGENT_SECRET_KEY` in `.env`. Claimable once per week per account. If already claimed this week, shows the next available date.
+  </Tab>
+  <Tab title="platform">
+    Starts a local paid API on port `3001`. Registers a platform with Agon and begins accepting consumer tokens.
+  </Tab>
+  <Tab title="consumer">
+    Registers a consumer account, makes paid API calls using `agon.fetch()`, and prints balance before/after.
+  </Tab>
+  <Tab title="agent">
+    First run: generates a fresh Ed25519 keypair, registers as an agent, prints `AGENT_SECRET_KEY` and deposit address. Subsequent runs: reuses saved credentials and runs 5 token strategy scenarios.
+  </Tab>
+</Tabs>
+
+## Manual Single-Call Test
+
+```bash
+# 1. Register
+CONSUMER=$(curl -s -X POST https://agonbackend-devnet.up.railway.app/account/register \
+  -H "Content-Type: application/json" \
+  -d '{"wallet_address": "YOUR_DEVNET_WALLET"}')
+
+DEPOSIT=$(echo $CONSUMER | jq -r .deposit_address)
+API_KEY=$(echo $CONSUMER | jq -r .api_key)
+
+# 2. Fund DEPOSIT on devnet, then mint a token
+TOKEN=$(curl -s -X POST https://agonbackend-devnet.up.railway.app/account/create-token \
+  -H "X-AGON-KEY: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"ttl": 60, "max_amount": 1000}' | jq -r .token)
+
+# 3. Call the demo merchant
+curl http://localhost:3001/api/generate -H "X-AGON-TOKEN: $TOKEN"
+
+# 4. Check balance
+curl https://agonbackend-devnet.up.railway.app/account/me -H "X-AGON-KEY: $API_KEY" | jq .available_balance
+```

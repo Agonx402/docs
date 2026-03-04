@@ -1,97 +1,72 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Welcome to Agon"
+description: "The payment infrastructure that makes x402 scale."
 ---
 
-## Setting up
+Agon is the **payment infrastructure that makes x402 scale**. The HTTP 402 "Payment Required" protocol is a powerful primitive for monetizing APIs — but it has a fundamental problem: every API call requires an on-chain transaction. At scale, that means millions of blockchain fees and seconds of RPC latency on every request.
 
-Get your documentation site up and running in minutes.
+Agon solves this by **decoupling authorization from settlement**. Consumers deposit USDC once. API calls are authorized instantly off-chain via the Agon ledger. Agon settles all on-chain work in a single, efficient transaction per merchant.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+<Tip>
+  **Zero on-chain transactions on the hot path.** Every API call is authorized via an off-chain ledger lookup. Solana is only touched at deposit, withdrawal, and settlement time.
+</Tip>
 
-## Make it yours
+<Warning>
+  **Agon is currently in open beta on devnet.** Sign up at [agon.so](https://agon.so) to get started.
+</Warning>
 
-Design a docs site that looks great and empowers your users.
+## Who is Agon for?
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+**🧑‍💻 Developers & Apps**
+
+You want to pay for AI services, data APIs, or compute resources programmatically. Deposit USDC once and your app automatically pays for every call — no wallets, no gas, no RPC latency.
+
+**🤖 AI Agents**
+
+You're building an autonomous agent that needs to purchase API access at runtime. Agon supports native Ed25519 wallet authentication — no browser, no OAuth, no human in the loop. Works with agentic wallets like Coinbase CDP so your agent never needs to manage raw keypairs.
+
+**🏗️ API Merchants**
+
+You want to monetize your API with USDC. Embed the Platform SDK in one middleware and start earning. Agon handles authorization, fraud prevention, and settlement — triggered by you when you're ready to settle.
+
+## x402 at Scale: The Numbers
+
+| Volume | Direct x402 Cost | Agon Cost |
+|---|---|---|
+| 100 calls → 1 merchant | 100 transactions | 1 settlement tx |
+| 1M calls → 50 merchants | 1,000,000 transactions | 3 transactions |
+| 1B calls → 50 merchants | 1,000,000,000 transactions | **still 3 transactions** |
+
+## Quickstarts
+
+<CardGroup cols={2}>
+  <Card title="Register as a Developer" icon="user" href="/quickstarts/register-developer">
+    Create your account and start paying for APIs in under 5 minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Register as an Agent" icon="robot" href="/quickstarts/register-agent">
+    Native Ed25519 wallet registration for AI agents and headless services.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Accept Payments" icon="credit-card" href="/quickstarts/accept-payments">
+    Monetize any endpoint with USDC in under 10 minutes.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Generate Payment Tokens" icon="key" href="/quickstarts/generate-tokens">
+    Create secure, single-use or multi-use authorization tokens for your users.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Explore the Docs
 
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="/getting-started/core-concepts">
+    Understand the authorization/settlement model and how balances work.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="How It Works" icon="diagram-project" href="/getting-started/how-it-works">
+    Trace a payment from deposit to settlement, step by step.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="API Reference" icon="terminal" href="/api-reference/introduction">
+    Full REST API documentation with request/response shapes.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Recipes & Cookbooks" icon="book-open" href="/recipes/metered-api">
+    Copy-paste patterns for common integration scenarios.
   </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+</CardGroup>

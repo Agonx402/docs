@@ -1,0 +1,58 @@
+---
+title: "x402 Proxy Mode"
+description: "Pay any x402 merchant through Agon without the merchant integrating the Agon SDK directly."
+---
+
+Proxy mode gives you compatibility with existing x402 merchants who haven't directly integrated the Agon Platform SDK.
+
+<Warning>
+  **Merchant Requirement:** While proxy mode doesn't require the merchant to change their server code or integrate the Agon SDK, they **must** configure Agon as their payment facilitator.
+
+  ```javascript
+  // Example standard x402 merchant configuration
+  const facilitatorClient = new HTTPFacilitatorClient({
+    url: "https://agonbackend-devnet.up.railway.app"
+  });
+  ```
+</Warning>
+
+## How It Works
+
+When `agon.fetch()` receives a `402 Payment Required` response from a standard x402 merchant:
+
+<Steps>
+  <Step title="Read the Payment Challenge">
+    The SDK parses the `PAYMENT-REQUIRED` header from the 402 response to extract the payment amount, currency, and merchant destination.
+  </Step>
+
+  <Step title="Route Through Agon">
+    The SDK sends a payment request to `POST /proxy` on the Agon backend, debiting the consumer's available balance plus a small proxy fee.
+  </Step>
+
+  <Step title="On-chain Payment from Agon's Wallet">
+    Agon pays the merchant on-chain from its operational wallet. The payment does **not** originate from the consumer's wallet — preserving privacy.
+  </Step>
+
+  <Step title="Transparent Response">
+    The merchant's successful response (originally gated behind the 402) is returned to your code transparently.
+  </Step>
+</Steps>
+
+```typescript
+// Agon-native merchant or standard x402 — same call, handled transparently
+const response = await agon.fetch('https://any-x402-merchant.com/api/data')
+```
+
+## Spending Controls in Proxy Mode
+
+All configured spending controls apply equally to proxy requests:
+
+- **Per-request maximum** — proxy requests exceeding the limit require an override signature
+- **Daily spending limit** — proxy spend counts toward the daily total
+- **Domain allowlist** — set `proxyAllowedDomains` to restrict which merchants are auto-paid
+
+## Privacy Benefit
+
+<Tip>
+  In proxy mode, the on-chain payment originates from **Agon's wallet**, not yours. The merchant, blockchain explorers, and on-chain analysts cannot trace the payment back to your wallet address or identify your purchasing patterns.
+</Tip>

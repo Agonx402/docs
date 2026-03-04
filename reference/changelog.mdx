@@ -1,0 +1,46 @@
+---
+title: "Changelog"
+description: "Release history for the Agon platform and SDKs."
+---
+
+## v0.4 — March 2026
+
+**Security Improvements**
+
+- **Authorization rate limiting** — Requests to `POST /authorize` are now rate-limited per merchant and consumer pair. Excessive calls return `429 rate_limited`.
+- **Stricter input validation** — `request_id` now enforces a character and length limit. Invalid values return `400 validation_error`.
+- **Tighter expiry enforcement** — Consuming an expired reservation now always returns `409 reservation_expired`, regardless of background processing state.
+
+---
+
+## v0.3 — February 2026
+
+**Multi-Use Budgeted Tokens**
+
+- Tokens can now carry a `budget` — a hard ceiling on total spend across multiple API calls, enabling long-running agent sessions without re-authenticating.
+- New denial codes: `token_budget_exceeded` and `amount_exceeds_token_cap`.
+
+---
+
+## v0.2 — January 2026
+
+**Agent-Native Authentication & Beta Access**
+
+- AI agents can now register and authenticate without a browser or OAuth flow — using only a keypair signature.
+- Open beta on devnet — no invite required, anyone can register and start building.
+- Admin tooling for managing access and monitoring registrations.
+
+---
+
+## v0.1 — December 2025
+
+**Initial Release**
+
+- USDC deposit flow with automatic balance crediting.
+- Off-chain authorization engine — reserve, consume, and release funds with full idempotency.
+- Batch settlement to merchant wallets on Solana.
+- x402 proxy mode for universal merchant compatibility.
+- Spending controls — per-request limits, daily budgets, and domain restrictions.
+- Auto-refill to keep agent balances topped up automatically.
+- SDK for Fastify, Express, and Next.js.
+- Agent demo script
