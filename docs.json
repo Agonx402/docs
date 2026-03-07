@@ -40,6 +40,7 @@
               "guides/spending-controls",
               "guides/auto-refill",
               "guides/x402-proxy-mode",
+              "guides/standardx",
               "guides/trust-model-security"
             ]
           },
@@ -117,13 +118,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@agon.so"
+        "href": "mailto:support@agonx402.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://agon.so/dashboard"
+      "href": "https://agonx402.com/dashboard"
     }
   },
   "contextual": {
