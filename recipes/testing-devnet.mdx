@@ -5,6 +5,19 @@ description: "Test end-to-end payment flows on Solana devnet without spending re
 
 Test end-to-end payment flows without spending real USDC.
 
+## API Environments
+
+Agon exposes two separate API environments. They are fully independent — accounts, balances, and transactions do not cross between them.
+
+| Environment | Base URL | Solana network | USDC |
+|---|---|---|---|
+| **Devnet** | `https://api-devnet.agonx402.com` | Devnet | Test (worthless) |
+| **Mainnet** | `https://api-mainnet.agonx402.com` | Mainnet | Real |
+
+<Warning>
+  Never use real funds on devnet. Never use devnet credentials on mainnet. They are separate systems.
+</Warning>
+
 ## Environment Setup
 
 ```bash
@@ -19,7 +32,7 @@ solana airdrop 2 --url devnet
 # .env file
 SOLANA_RPC_URL=https://api.devnet.solana.com
 USDC_MINT=Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
-AGON_BASE_URL=https://agonbackend-devnet.up.railway.app
+AGON_BASE_URL=https://api-devnet.agonx402.com
 ```
 
 ## Run Demo Suite
@@ -56,7 +69,7 @@ cd agon-demo && npm run agent
 
 ```bash
 # 1. Register
-CONSUMER=$(curl -s -X POST https://agonbackend-devnet.up.railway.app/account/register \
+CONSUMER=$(curl -s -X POST https://api-devnet.agonx402.com/account/register \
   -H "Content-Type: application/json" \
   -d '{"wallet_address": "YOUR_DEVNET_WALLET"}')
 
@@ -64,7 +77,7 @@ DEPOSIT=$(echo $CONSUMER | jq -r .deposit_address)
 API_KEY=$(echo $CONSUMER | jq -r .api_key)
 
 # 2. Fund DEPOSIT on devnet, then mint a token
-TOKEN=$(curl -s -X POST https://agonbackend-devnet.up.railway.app/account/create-token \
+TOKEN=$(curl -s -X POST https://api-devnet.agonx402.com/account/create-token \
   -H "X-AGON-KEY: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"ttl": 60, "max_amount": 1000}' | jq -r .token)
@@ -73,5 +86,5 @@ TOKEN=$(curl -s -X POST https://agonbackend-devnet.up.railway.app/account/create
 curl http://localhost:3001/api/generate -H "X-AGON-TOKEN: $TOKEN"
 
 # 4. Check balance
-curl https://agonbackend-devnet.up.railway.app/account/me -H "X-AGON-KEY: $API_KEY" | jq .available_balance
+curl https://api-devnet.agonx402.com/account/me -H "X-AGON-KEY: $API_KEY" | jq .available_balance
 ```

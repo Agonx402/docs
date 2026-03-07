@@ -7,6 +7,10 @@ description: "Monetize any API endpoint with USDC in under 10 minutes."
   **Prerequisites:** A Solana wallet address to receive settlement payouts.
 </Note>
 
+<Info>
+  Examples below use `https://api-devnet.agonx402.com` (devnet). For production, use `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 <Steps>
   <Step title="Install & Register">
     ```bash
@@ -14,7 +18,7 @@ description: "Monetize any API endpoint with USDC in under 10 minutes."
     ```
 
     ```bash
-    curl -X POST https://agonbackend-devnet.up.railway.app/platform/register \
+    curl -X POST https://api-devnet.agonx402.com/platform/register \
       -H "Content-Type: application/json" \
       -d '{"name": "My API", "wallet_address": "YourSolanaAddress"}'
     ```
@@ -31,7 +35,7 @@ description: "Monetize any API endpoint with USDC in under 10 minutes."
 
         const app = Fastify()
         const agon = new AgonPlatformCore({
-          agonUrl: 'https://agonbackend-devnet.up.railway.app',
+          agonUrl: 'https://api-devnet.agonx402.com',
           platformKey: process.env.AGON_PLATFORM_KEY!,
           pricing: 1000, // 1000 micro-USDC = $0.001 per call
         })
@@ -62,7 +66,7 @@ description: "Monetize any API endpoint with USDC in under 10 minutes."
 
         const app = express()
         const agon = new AgonPlatformCore({
-          agonUrl: 'https://agonbackend-devnet.up.railway.app',
+          agonUrl: 'https://api-devnet.agonx402.com',
           platformKey: process.env.AGON_PLATFORM_KEY!,
           pricing: 1000,
         })
@@ -94,7 +98,7 @@ description: "Monetize any API endpoint with USDC in under 10 minutes."
         import { NextRequest, NextResponse } from 'next/server'
 
         const agon = new AgonPlatformCore({
-          agonUrl: 'https://agonbackend-devnet.up.railway.app',
+          agonUrl: 'https://api-devnet.agonx402.com',
           platformKey: process.env.AGON_PLATFORM_KEY!,
           pricing: 1000,
         })
@@ -120,7 +124,7 @@ description: "Monetize any API endpoint with USDC in under 10 minutes."
     When you're ready to settle, trigger it via the Agon dashboard or API:
 
     ```bash
-    curl -X POST https://agonbackend-devnet.up.railway.app/platform/settle \
+    curl -X POST https://api-devnet.agonx402.com/platform/settle \
       -H "Authorization: Bearer pk_xxxxx"
     ```
 

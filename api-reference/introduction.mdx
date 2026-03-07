@@ -3,7 +3,20 @@ title: "API Reference"
 description: "Full REST API reference for the Agon payment aggregator — base URL, authentication, and all endpoints."
 ---
 
-Base URL: `https://agonbackend-devnet.up.railway.app`
+## Environments
+
+| Environment | Base URL | Network | Use for |
+|---|---|---|---|
+| **Devnet** | `https://api-devnet.agonx402.com` | Solana Devnet | Development & testing |
+| **Mainnet** | `https://api-mainnet.agonx402.com` | Solana Mainnet | Production |
+
+<Note>
+  Devnet uses test USDC — transactions are real API calls but no real money moves. Use the
+  built-in [faucet](/recipes/testing-devnet) to get test USDC. Switch to the mainnet URL when
+  you're ready to go live.
+</Note>
+
+
 
 ## Authentication
 

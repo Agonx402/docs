@@ -5,6 +5,10 @@ description: "Programmatic guardrails for your Agon account — per-request caps
 
 Spending controls put programmatic guardrails on your account. Essential for AI agents operating autonomously.
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 ## Available Controls
 
 ### Per-Request Maximum
@@ -59,7 +63,7 @@ await agon.setSpendingControls({
 The controls endpoint only updates the fields you provide — others remain unchanged:
 
 ```bash
-curl -X POST https://agonbackend-devnet.up.railway.app/account/spending-controls \
+curl -X POST https://api-devnet.agonx402.com/account/spending-controls \
   -H "X-AGON-KEY: ag_xxxxx" \
   -H "Content-Type: application/json" \
   -d '{"max_per_request": 500000}'
@@ -72,7 +76,7 @@ When a request would exceed a spending control, the consumer can sign a one-time
 
 ```typescript
 const agon = new AgonClient({
-  baseUrl: 'https://agonbackend-devnet.up.railway.app',
+  baseUrl: 'https://api-devnet.agonx402.com',
   apiKey: process.env.AGON_API_KEY!,
   signer: async (msg) => myWallet.sign(msg),
   onLimitExceeded: async (details) => {

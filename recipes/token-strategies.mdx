@@ -5,6 +5,10 @@ description: "Choose the right consumer token type for your use case — per-req
 
 Choose the right token type for your use case.
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 ## Quick Reference
 
 | Scenario | Strategy | Config |
@@ -18,7 +22,7 @@ Choose the right token type for your use case.
 
 ```typescript
 async function callWithFreshToken(url: string, maxCost: number) {
-  const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+  const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
     method: 'POST',
     headers: { 'X-AGON-KEY': process.env.AGON_API_KEY!, 'Content-Type': 'application/json' },
     body: JSON.stringify({ ttl: 30, max_amount: maxCost }),
@@ -36,7 +40,7 @@ class TokenSession {
 
   async get() {
     if (Date.now() > this.expiry - 5000) {
-      const res = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+      const res = await fetch('https://api-devnet.agonx402.com/account/create-token', {
         method: 'POST',
         headers: { 'X-AGON-KEY': process.env.AGON_API_KEY!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ ttl: 120, budget: 100_000 }),
@@ -53,7 +57,7 @@ class TokenSession {
 
 ```typescript
 // Parent mints a capped token; sub-agent gets spend authority without API key access
-const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
   method: 'POST',
   headers: { 'X-AGON-KEY': process.env.AGON_API_KEY!, 'Content-Type': 'application/json' },
   body: JSON.stringify({ ttl: 600, budget: 25_000 }), // sub-agent cannot spend more than $0.025

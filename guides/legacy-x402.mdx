@@ -39,7 +39,7 @@ import { AgonPlatformCore } from "@agonx402/platform";
 import { AGON_HEADERS } from "@agonx402/types";
 
 const core = new AgonPlatformCore({
-  agonUrl: "https://api.agonx402.com",
+  agonUrl: "https://api-devnet.agonx402.com",
   platformKey: process.env.AGON_PLATFORM_KEY!,
   pricing: 1000, // $0.001 USDC
   // Optional: direct legacy payments to a specific wallet
@@ -111,7 +111,7 @@ When an Agon consumer wants to call a merchant that is **not** on Agon, Agon's p
 import { AgonClient } from "@agonx402/client";
 
 const agon = new AgonClient({
-  baseUrl: "https://api.agonx402.com",
+  baseUrl: "https://api-devnet.agonx402.com",
   apiKey: process.env.AGON_API_KEY!,
 });
 

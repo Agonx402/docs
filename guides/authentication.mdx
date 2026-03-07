@@ -5,6 +5,10 @@ description: "The full authentication model — API keys, consumer tokens, Ed255
 
 Agon uses distinct authentication mechanisms depending on **who** you are and **what** you're talking to.
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 ## Authentication Overview
 
 | Header | Used by | Sent to | Purpose |
@@ -37,7 +41,7 @@ Tokens are short-lived JWTs created by calling Agon, then forwarded to the merch
 
 ```http
 # Step 1: Mint a token from Agon
-POST https://agonbackend-devnet.up.railway.app/account/create-token
+POST https://api-devnet.agonx402.com/account/create-token
 X-AGON-KEY: ag_xxxxx
 Content-Type: application/json
 

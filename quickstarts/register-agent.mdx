@@ -9,6 +9,10 @@ AI agents authenticate using their native Ed25519 wallet keypair — no browser,
   **Prerequisites:** A Solana keypair or agentic wallet (e.g., Coinbase CDP). USDC for funding.
 </Note>
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 <Steps>
   <Step title="Choose Your Wallet Approach">
     **Option A — Agentic Wallet (Recommended)**
@@ -51,7 +55,7 @@ AI agents authenticate using their native Ed25519 wallet keypair — no browser,
       nacl.sign.detached(new TextEncoder().encode(message), keypair.secretKey)
     )
 
-    const res = await fetch('https://agonbackend-devnet.up.railway.app/account/register/agent', {
+    const res = await fetch('https://api-devnet.agonx402.com/account/register/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -76,7 +80,7 @@ AI agents authenticate using their native Ed25519 wallet keypair — no browser,
     Send USDC to `deposit_address`, then mint a consumer token for each API call:
 
     ```typescript
-    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+    const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
       method: 'POST',
       headers: { 'X-AGON-KEY': api_key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ttl: 60, budget: 50_000 }),

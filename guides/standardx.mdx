@@ -44,7 +44,7 @@ Your Agon-powered API automatically accepts any standard x402 buyer.
 import { AgonPlatformCore } from "@agonx402/platform";
 
 const core = new AgonPlatformCore({
-  agonUrl: "https://api.agonx402.com",
+  agonUrl: "https://api-devnet.agonx402.com",
   platformKey: process.env.AGON_PLATFORM_KEY!,
   pricing: 1000, // $0.001 USDC
   // Optional: route standardx payments to a specific wallet
@@ -105,7 +105,7 @@ When an Agon consumer calls a non-Agon merchant, Agon's proxy acts as the standa
 ```typescript
 import { AgonClient } from "@agonx402/client";
 
-const agon = new AgonClient({ baseUrl: "https://api.agonx402.com", apiKey: "..." });
+const agon = new AgonClient({ baseUrl: "https://api-devnet.agonx402.com", apiKey: "..." });
 
 // Works transparently with any x402 merchant
 const res = await agon.fetch("https://any-x402-merchant.com/api/data");

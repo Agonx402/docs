@@ -5,13 +5,17 @@ description: "Charge different amounts per request based on the model, tier, or 
 
 Charge different amounts per request based on the requested resource, AI model, user tier, or payload size.
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 ## Using `agon.pricing`
 
 The Platform SDK allows you to pass a `pricing` function that evaluates the request dynamically:
 
 ```typescript
 const agon = new AgonPlatformCore({
-  agonUrl: 'https://agonbackend-devnet.up.railway.app',
+  agonUrl: 'https://api-devnet.agonx402.com',
   platformKey: process.env.AGON_PLATFORM_KEY!,
   pricing: (req) => {
     // req is the standard framework request object (Fastify/Express/NextRequest)

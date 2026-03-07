@@ -7,6 +7,10 @@ description: "Get your developer account and make your first paid API call in un
   **Prerequisites:** Node.js 18+, a Solana wallet, and USDC (devnet or mainnet).
 </Note>
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 <Steps>
   <Step title="Install the SDK">
     ```bash
@@ -16,7 +20,7 @@ description: "Get your developer account and make your first paid API call in un
 
   <Step title="Register Your Account">
     ```bash
-    curl -X POST https://agonbackend-devnet.up.railway.app/account/register \
+    curl -X POST https://api-devnet.agonx402.com/account/register \
       -H "Content-Type: application/json" \
       -d '{"wallet_address": "YourSolanaWalletAddress"}'
     ```
@@ -43,7 +47,7 @@ description: "Get your developer account and make your first paid API call in un
     import { AgonClient } from '@agonx402/client'
 
     const agon = new AgonClient({
-      baseUrl: 'https://agonbackend-devnet.up.railway.app',
+      baseUrl: 'https://api-devnet.agonx402.com',
       apiKey: process.env.AGON_API_KEY!,
       signer: async (msg) => myWallet.sign(msg),
     })

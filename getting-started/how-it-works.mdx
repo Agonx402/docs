@@ -5,6 +5,10 @@ description: "Trace a payment from deposit to settlement — the full Agon lifec
 
 From deposit to settlement in four steps.
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 <Steps>
   <Step title="Create an Account & Deposit">
     Register to receive a unique HD-derived Solana address. Send USDC there from any wallet. Agon detects the transfer via Helius webhooks and credits your balance automatically — typically within seconds.
@@ -13,7 +17,7 @@ From deposit to settlement in four steps.
     import { AgonClient } from '@agonx402/client'
 
     const agon = new AgonClient({
-      baseUrl: 'https://agonbackend-devnet.up.railway.app',
+      baseUrl: 'https://api-devnet.agonx402.com',
       apiKey: process.env.AGON_API_KEY!,
       signer: async (msg) => myWallet.sign(msg),
     })

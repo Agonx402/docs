@@ -5,6 +5,10 @@ description: "Create secure, single-use and budgeted authorization tokens for AP
 
 Consumer tokens are short-lived JWTs used to authorize API calls. Your raw `api_key` is never sent to a merchant.
 
+<Info>
+  Examples use `https://api-devnet.agonx402.com` (devnet). For production, replace with `https://api-mainnet.agonx402.com`. See [Environments](/api-reference/introduction#environments).
+</Info>
+
 ## Token Modes
 
 | Mode | `budget` field | Behavior |
@@ -22,7 +26,7 @@ Consumer tokens are short-lived JWTs used to authorize API calls. Your raw `api_
   <Tab title="A — Strict Single-Use">
     ```typescript
     // Exact cost known — maximum security
-    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+    const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
       body: JSON.stringify({ ttl: 60, max_amount: 10_000 }),
@@ -32,7 +36,7 @@ Consumer tokens are short-lived JWTs used to authorize API calls. Your raw `api_
   <Tab title="B — Time-Constrained">
     ```typescript
     // Cost unknown, task completes quickly
-    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+    const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
       body: JSON.stringify({ ttl: 5, budget: 500_000 }), // 5s window, $0.50 ceiling
@@ -42,7 +46,7 @@ Consumer tokens are short-lived JWTs used to authorize API calls. Your raw `api_
   <Tab title="C — Budget-Constrained">
     ```typescript
     // Duration variable, spend must stay bounded
-    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+    const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
       body: JSON.stringify({ ttl: 300, budget: 20_000 }), // 5 min runway, $0.02 cap
@@ -52,7 +56,7 @@ Consumer tokens are short-lived JWTs used to authorize API calls. Your raw `api_
   <Tab title="D — Time + Budget (recommended)">
     ```typescript
     // Variable workloads — both time and spend bounded
-    const { token } = await fetch('https://agonbackend-devnet.up.railway.app/account/create-token', {
+    const { token } = await fetch('https://api-devnet.agonx402.com/account/create-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-AGON-KEY': apiKey },
       body: JSON.stringify({ ttl: 60, budget: 50_000 }), // 60s window, $0.05 max
