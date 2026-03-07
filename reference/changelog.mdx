@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Release history for the Agon platform and SDKs."
 ---
 
+## v0.5 — March 2026
+
+**StandardX — Standard x402 Interoperability**
+
+- **Universal Buyer Support** — Any standard x402 buyer can now pay an Agon-powered merchant without needing an Agon account. StandardX is seamlessly active for all registered merchants. Agon automatically sponsors these transactions as the x402 facilitator on the merchant's behalf, subtracting a $0.001 facilitation fee from their Agon balance.
+- **Universal Merchant Support** — The Agon consumer client now automatically routes payments to any non-Agon x402 merchant. The client seamlessly orchestrates the payment as a standard x402 client using the consumer's Agon balance, with Agon originating the final on-chain transaction.
+- **Configurable StandardX routing** — Merchants can now configure an alternate receiving wallet (`walletAddress`) in the SDK initialization to route payments from non-Agon buyers to a separate on-chain address than their primary platform wallet.
+- **Expanded Examples** — New quickstart applications demonstrate how to build an API that accepts both Agon-native and StandardX payments concurrently, as well as a standalone StandardX buyer script.
+
+
+---
+
 ## v0.4 — March 2026
 
 **Security Improvements**
