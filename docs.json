@@ -14,7 +14,7 @@
         "tab": "Protocol Docs",
         "groups": [
           {
-            "group": "Thesis",
+            "group": "Overview",
             "pages": [
               "index",
               "thesis/cooperative-scaling",
@@ -38,7 +38,7 @@
             ]
           },
           {
-            "group": "Settlement Modes",
+            "group": "Settlement",
             "pages": [
               "settlement-modes/latest-commitment",
               "settlement-modes/bundle-settlement",
@@ -46,7 +46,7 @@
             ]
           },
           {
-            "group": "Security And Trust Model",
+            "group": "Security",
             "pages": [
               "security/security-properties",
               "security/trust-model"
@@ -69,7 +69,7 @@
             ]
           },
           {
-            "group": "Demos / Devnet",
+            "group": "Examples",
             "pages": [
               "demos/protocol-demo",
               "demos/ows-gateway-example"
@@ -113,7 +113,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "View Devnet Demo",
+      "label": "Run Devnet Demo",
       "href": "/demos/protocol-demo"
     }
   },
