@@ -5,7 +5,7 @@ description: "How Agon lets different payment relationships choose different saf
 
 Agon does not force every payment relationship into the same shape.
 
-Some teams want fully pre-funded lanes with heavy use of locked balance. Others are comfortable settling periodically because the relationship is trusted, well-monitored, or small enough that temporary exposure is acceptable. Many real integrations sit somewhere in the middle.
+Some teams want fully locked channels where a signed commitment is effectively trustless as long as the receiver settles before locked funds can be released. Others are comfortable with partly locked channels or periodic settlement, which makes the relationship trust-minimized instead. Many real integrations sit somewhere in the middle.
 
 V4 treats that as a first-class design choice instead of pretending every relationship is identical.
 
@@ -19,7 +19,7 @@ You can lock part of a payer's balance to a specific lane. That gives the payee 
 
 ### 2. Settlement frequency
 
-You can settle often or rarely. More frequent settlement means less offchain exposure. Less frequent settlement means better compression.
+You can settle every call, every few calls, or much later. More frequent settlement means less timing risk. Less frequent settlement means better compression.
 
 ### 3. Operational trust
 
@@ -35,7 +35,7 @@ It means something narrower:
 - how much locked balance the payee expects
 - whether an operator helps with submission or monitoring
 
-That is why Agon is non-custodial without claiming that every relationship is equally trust-minimized at every moment.
+That is why Agon is non-custodial without claiming that every relationship is equally trustless at every moment.
 
 ## Simple Examples
 

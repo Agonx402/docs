@@ -24,6 +24,10 @@ They may want an external service to handle:
 
 `authorized_settler` gives them a native protocol mechanism for that delegation while keeping balances in protocol state.
 
+If you want the bigger architectural pattern that often sits on top of this feature, read [Operator Hubs](/core-concepts/operator-hubs).
+
+One common pattern is a hub or operator that receives user commitments on one set of channels and pays providers on another. In that setup, `authorized_settler` helps with submission and settlement operations, while the hub model itself comes from the channel graph and the operator's business logic.
+
 ## What It Means Today
 
 In V4, `authorized_settler` is **additive**, not exclusive.

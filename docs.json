@@ -37,7 +37,8 @@
               "core-concepts/balances-and-withdrawals",
               "core-concepts/permanent-lanes",
               "core-concepts/cooperation-trust-collateral",
-              "core-concepts/authorized-settler"
+              "core-concepts/authorized-settler",
+              "core-concepts/operator-hubs"
             ]
           },
           {
@@ -74,7 +75,6 @@
           {
             "group": "Examples",
             "pages": [
-              "demos/operator-hub-model",
               "demos/protocol-demo",
               "demos/ows-gateway-example"
             ]

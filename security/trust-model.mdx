@@ -26,8 +26,8 @@ Agon does not remove all real-world tradeoffs between participants.
 
 For example:
 
-- one payee may require heavy lane locking
-- another may accept periodic settlement and less locked balance
+- one payee may require enough locked funds to make signed value effectively trustless
+- another may accept partial lockup or periodic settlement instead
 - one integration may settle every few seconds
 - another may settle in larger batches
 - one team may run settlement directly
@@ -59,10 +59,4 @@ That lets a team delegate submission work such as:
 
 But the current V4 design keeps the payee's direct settlement path. `authorized_settler` is additive, not exclusive. That is an intentional choice because it avoids turning normal unilateral settlement into an operator-gated escrow path.
 
-## The Right Mental Model
-
-The safest way to think about Agon is this:
-
-Agon is a public settlement and clearing protocol for repeated machine-payment relationships.
-
-It gives those relationships room to choose how much they want to pay in locked capital, settlement frequency, and operational overhead. The protocol makes those tradeoffs explicit instead of pretending that one payment model should fit every relationship.
+Agon is a public settlement and clearing protocol for repeated machine-payment relationships. It gives those relationships room to choose how much they want to pay in locked capital, settlement frequency, and operational overhead. The protocol makes those tradeoffs explicit instead of pretending that one payment model should fit every relationship.

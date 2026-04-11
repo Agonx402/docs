@@ -23,7 +23,7 @@ That means the same relationship can scale in stages:
 
 Not every Agon payment is cooperative.
 
-One payer can open a one-way payment channel, sign cumulative commitments, and let the payee settle later without asking anyone else to co-sign each update. That flow can be fully trust-minimized if the payee requires enough locked balance.
+One payer can open a one-way payment channel, sign cumulative commitments, and let the payee settle later without asking anyone else to co-sign each update. That flow can be fully trustless for the signed value if enough funds are locked and the payee settles before those locked funds can be released.
 
 Cooperation starts when two or more participants agree on a shared state update. That is what happens in bilateral clearing and multilateral clearing rounds: the participants sign one shared message so several payment channels can be cleared together.
 

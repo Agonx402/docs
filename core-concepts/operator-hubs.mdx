@@ -1,0 +1,105 @@
+---
+title: "Operator Hubs"
+description: "How hub-style operators can be built on top of Agon without turning the base protocol into one managed rail."
+---
+
+Agon can support an **operator hub** model on top of the base protocol.
+
+In this setup, users open payment channels to a hub, providers open payment channels with that same hub, and the hub handles payment flow between both sides. The hub can enforce its own policy, pricing, compliance, and routing logic, while settlement still happens through Agon's non-custodial protocol state.
+
+## The Basic Shape
+
+Instead of every user opening a direct channel to every provider, the graph can look like this:
+
+```text
+user -> hub
+hub -> provider
+```
+
+The hub becomes the party that:
+
+1. receives signed payment updates from users
+2. decides whether to honor or reject a request
+3. serves the request directly or forwards it to a provider
+4. signs outbound payment updates to providers
+5. settles both sides later through normal Agon settlement
+
+## Why This Fits Agon
+
+Agon does not currently do Lightning-style liquidity routing. It does not have path-based forwarding, HTLCs, or atomic multi-hop settlement.
+
+What it does have is exactly what a hub needs:
+
+1. permanent participant identities
+2. permanent one-way payment channels
+3. cumulative commitments
+4. payee-side bundle settlement
+5. cooperative clearing when several participants want to co-sign one shared update
+
+That means a hub can be built **without changing the base protocol**.
+
+## Example Flow
+
+Imagine Alice wants to pay an RPC provider through a hub.
+
+1. Alice has a channel to the hub.
+2. The provider has a channel from the hub.
+3. Alice signs a cumulative commitment increasing what she owes the hub.
+4. The hub checks Alice's balance, channel lock, policy rules, and rate limits.
+5. The hub serves or forwards the RPC call.
+6. The hub signs a cumulative commitment increasing what it owes the provider.
+7. Later, the hub settles inbound and outbound channels through normal Agon settlement.
+
+The hub is doing payment coordination, but the balances still live in protocol state.
+
+## Trustless, Trust-Minimized, And Credit-Based Variants
+
+The hub model can be used in more than one way.
+
+### Fully locked trustless flow
+
+If the spending side has enough funds locked and the receiving side settles before those locked funds can be released, then the signed value is fully trustless in the normal channel sense. The hub is still a service operator, but it is not relying on offchain custody to make the payment valid.
+
+### Partly locked or periodically settled flow
+
+If only part of expected usage is locked, or if balances are mostly shared rather than locked to one channel, the model becomes trust-minimized instead of fully trustless. The channel still settles through protocol state, but the payee is taking more timing and credit risk between settlements.
+
+### Credit hub flow
+
+If the hub is extending credit in either direction, then the trust surface becomes larger still. The protocol still handles balances non-custodially, but the business logic is now relying on the hub's own risk and liquidity management.
+
+## Why This Is Different From One Managed Rail
+
+This model can look similar to Circle-style nanopayment infrastructure at the product level:
+
+1. one operator coordinates payment flow
+2. one operator can gate access or apply policy
+3. users and providers do not need a full mesh of direct payment channels
+
+The difference is that Agon does not require one global operator.
+
+Any team can build a hub on top of the protocol. Users and providers are not bound to one payment company just to access the settlement rail itself. They can choose different hubs, use direct channels, or mix both models.
+
+## What The Hub Controls
+
+A hub can still control service access. It can:
+
+1. deny service
+2. delay forwarding
+3. require additional lockup
+4. choose which providers it will work with
+
+That is not a protocol bug. It is the service-layer business model of the hub.
+
+The important difference is that service control and settlement control are no longer the same thing. The protocol underneath is still open and non-custodial.
+
+## Relationship To `authorized_settler`
+
+`authorized_settler` can help a hub with relaying, settlement automation, and payment operations, but it is not the main reason the hub model works.
+
+The main reason the hub model works is simpler:
+
+1. users owe the hub on one set of channels
+2. the hub owes providers on another set of channels
+
+`authorized_settler` is useful around the edges. The channel graph is the core of the model.
