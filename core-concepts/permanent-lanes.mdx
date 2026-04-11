@@ -1,10 +1,100 @@
 ---
 title: "Permanent Lanes"
-description: "Why Agon V4 uses permanent directed lanes."
+description: "How Agon V4 models one long-lived payment relationship."
 ---
 
-Agon V4 removed closable and reopenable payment lanes.
+In Agon V4, a lane is one **directed** relationship from one payer to one payee for one token.
 
-Each directed lane is permanent for the lifetime of the deployment and is keyed by `payer_id`, `payee_id`, and `token_id`. Its cumulative settled amount only moves forward.
+The canonical lane key is:
 
-This design removes the old close and reopen replay boundary, eliminates `lane_generation`, and makes settlement semantics much easier to reason about. The tradeoff is that the protocol keeps more long-lived state onchain in exchange for a cleaner model and more stable offchain integration.
+`payer_id + payee_id + token_id`
+
+That lane is stored in one permanent `ChannelState` PDA under the `channel-v2` seed scheme.
+
+## Why Lanes Are Directed
+
+Agon keeps lanes directed because the hot path is usually one party paying another.
+
+That matters for the most common machine-payment case:
+
+- one buyer paying one API
+- one agent paying one tool
+- one service paying one provider
+
+The payer signs a unilateral cumulative message. The payee does not need to co-sign every offchain update. That keeps the hot path simple.
+
+## What `ChannelState` Stores
+
+| Field | Meaning |
+| --- | --- |
+| `token_id` | The settlement token for this lane |
+| `payer_id` | The participant that owes value on this lane |
+| `payee_id` | The participant that receives value on this lane |
+| `settled_cumulative` | The highest cumulative amount already settled |
+| `locked_balance` | Funds ring-fenced to this lane |
+| `authorized_signer` | The key allowed to sign unilateral lane messages |
+| `pending_unlock_amount` + `unlock_requested_at` | Timelocked lane unlock request |
+| `pending_authorized_signer` + `authorized_signer_update_requested_at` | Timelocked signer rotation request |
+
+The lane does not store the latest signed message. That stays offchain. The lane only stores the latest state that has already been accepted onchain.
+
+## Creating A Lane
+
+The payer creates the lane and pays the account rent. The payee may need to sign too, depending on its inbound-lane policy.
+
+```ts
+await program.methods
+  .createChannel(tokenId, null)
+  .accounts({
+    tokenRegistry,
+    owner: payer.publicKey,
+    payerAccount,
+    payeeAccount,
+    payeeOwner: payee.publicKey,
+    channelState,
+    systemProgram: SystemProgram.programId,
+  } as any)
+  .signers([payer, payee])
+  .rpc();
+```
+
+If the payer passes `null` for `authorized_signer`, the protocol uses the payer's wallet as the lane signer by default.
+
+## Locking And Unlocking Funds
+
+Locked balance is optional. Some integrations will use it heavily. Others will not use it at all.
+
+If you lock funds to a lane, the payee knows that settlement on that lane can consume that locked amount before touching the payer's shared balance.
+
+Unlocking is intentionally delayed:
+
+1. the payer requests an unlock for some amount
+2. the protocol waits for the configured timelock
+3. the payer executes the unlock and receives the remaining locked amount back into `available_balance`
+
+This gives the payee time to settle recent commitments before the locked funds disappear.
+
+## Rotating The Lane Signer
+
+The lane signer can change, but not instantly.
+
+V4 uses the same pattern as lane unlocks:
+
+1. request a signer change
+2. wait through the timelock
+3. execute the change
+
+Already-issued commitments remain valid until the rotation executes because the old signer stays active during the waiting period.
+
+## Why Lanes Are Permanent
+
+Older designs allowed lanes to close and reopen. V4 removed that behavior.
+
+Permanent lanes make the protocol easier to build on because:
+
+1. there is no close-and-reopen replay boundary
+2. signed messages no longer need `lane_generation`
+3. the lane key stays stable for offchain services
+4. the docs and mental model get simpler
+
+The tradeoff is more long-lived onchain state. V4 accepts that tradeoff because the simpler semantics are worth it for machine-payment integrations.

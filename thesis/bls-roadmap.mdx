@@ -1,12 +1,37 @@
 ---
 title: "BLS Roadmap"
-description: "How aggregate signatures would expand cooperative-clearing capacity."
+description: "How aggregate signatures would improve cooperative-round density without changing the core V4 model."
 ---
 
 BLS is a roadmap item for the cooperative-clearing path. V4 does not depend on it.
 
-Today the protocol already gets meaningful compression from latest-commitment settlement, payee-side bundle settlement, and cooperative rounds signed with Ed25519. Those flows are live, measurable, and sufficient to demonstrate the core model.
+Today the protocol already gets useful compression from:
 
-Where BLS matters is round density. In the current design, participant signatures and signer metadata consume a large share of the transaction budget for multilateral rounds. Aggregate signatures would reduce that overhead, which would allow more participants and more lane updates to fit before transaction bytes become the main constraint.
+1. latest-commitment settlement
+2. payee-side bundle settlement
+3. cooperative rounds signed with Ed25519
 
-That makes BLS valuable because multilateral clearing becomes more compelling as the signed graph gets larger. It does not change the basic protocol model. It increases the capacity of the densest settlement mode. The generated synthetic benchmarks in this site show both the current Ed25519 limits and the projected headroom under aggregate signatures.
+Those flows are live, benchmarked, and enough to demonstrate the protocol thesis.
+
+## What BLS Would Change
+
+Aggregate signatures would change the density of cooperative rounds, not the basic protocol model.
+
+In practical terms, that means:
+
+1. fewer signature bytes
+2. more participants per round
+3. more channels per round before transaction bytes become the bottleneck
+
+That matters because cooperative clearing becomes more valuable as the signed group gets larger.
+
+## What BLS Would Not Change
+
+BLS would not change the core story:
+
+- the hot path is still offchain
+- unilateral commitments still matter
+- bundle settlement still matters
+- cooperative clearing is still optional
+
+So when Agon talks about BLS, the right framing is "future signature compression for denser rounds," not "the thing that makes the protocol work in the first place."

@@ -1,10 +1,86 @@
 ---
 title: "Latest Commitment Settlement"
-description: "One lane, one latest cumulative state, one settlement transaction."
+description: "How one `agon-cmt-v4` message settles one lane."
 ---
 
-The direct path is the simplest Agon primitive.
+Latest commitment settlement is the simplest Agon path.
 
-The payer signs `agon-cmt-v4` to authorize a lane up to a cumulative amount. The payee only needs the latest signed state. Intermediate states are useful for metering and local accounting, but they do not all need to be settled.
+One payer signs one `agon-cmt-v4` message for one lane. The payee, or a delegated submitter named in the message, submits it later with `settle_individual`.
 
-This means many offchain payments on the same lane can collapse into one onchain action. The protocol only cares about forward movement from the current settled cumulative amount to a newer cumulative amount.
+## What The Signed Message Means
+
+The message does not say "charge 25 more."
+
+It says:
+
+"This lane is now authorized up to cumulative amount X."
+
+The protocol compares that new cumulative amount to the lane's current `settled_cumulative` and settles only the difference.
+
+That is why the payee only needs the newest valid message. Older messages are useful for local metering, but they do not all need to be settled onchain.
+
+## What The Program Verifies
+
+When `settle_individual` runs, the program checks:
+
+1. the Ed25519 instruction is present and self-contained
+2. the signer of the message matches the lane's current `authorized_signer`
+3. the signed `message_domain` matches the deployment
+4. the message payer, payee, and token match the passed participant accounts and lane
+5. the submitter is either the payee owner or the optional `authorized_settler`
+6. the new cumulative amount is greater than the existing `settled_cumulative`
+7. the payer has enough total balance, counting locked lane balance first and shared participant balance second
+
+If any of those checks fail, settlement fails.
+
+## What Changes Onchain
+
+If the checks pass, the program:
+
+1. advances `channel.settled_cumulative`
+2. consumes any needed `locked_balance`
+3. debits the payer's shared balance for any remaining amount
+4. credits the payee
+5. credits the fee recipient if the signed message includes fee fields
+
+That is the whole direct path.
+
+## Minimal Example
+
+```ts
+const message = createCommitmentMessage({
+  payerId: channel.payerId,
+  payeeId: channel.payeeId,
+  tokenId: 1,
+  committedAmount: channel.settledCumulative.add(new anchor.BN(250_000)),
+  messageDomain,
+});
+
+const ed25519Ix = Ed25519Program.createInstructionWithPrivateKey({
+  privateKey: payer.secretKey,
+  message,
+});
+
+await program.methods
+  .settleIndividual()
+  .accounts({
+    channelState: channelPda,
+    payerAccount: payerParticipantPda,
+    payeeAccount: payeeParticipantPda,
+    submitter: payee.publicKey,
+  } as any)
+  .preInstructions([ed25519Ix])
+  .signers([payee])
+  .rpc();
+```
+
+## When To Use This Path
+
+Use latest commitment settlement when:
+
+- one payer and one payee interact repeatedly
+- you want the smallest possible protocol surface
+- you do not need a payee-side bundle yet
+- you do not need a cooperative round yet
+
+It is also the best place to start when you are integrating Agon for the first time, because every other settlement mode builds on the same basic ideas.

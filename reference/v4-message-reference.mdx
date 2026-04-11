@@ -1,13 +1,51 @@
 ---
 title: "V4 Message Reference"
-description: "The two signed message formats used by Agon Protocol V4."
+description: "The exact signed message formats used by Agon Protocol V4."
 ---
 
-Agon V4 uses two signed message types: one for unilateral lane updates and one for cooperative clearing rounds.
+Agon V4 uses two signed message types:
+
+1. `agon-cmt-v4` for one directed lane
+2. `agon-round-v4` for one cooperative clearing round
+
+This page explains the exact fields, encoding rules, and practical meaning of both.
+
+## Common Encoding Rules
+
+Both message formats start with:
+
+1. a one-byte `kind`
+2. a one-byte `version`
+3. a 16-byte `message_domain`
+
+After that, the rest of the fields use the format's own layout.
+
+### `message_domain`
+
+`message_domain` is derived inside the program from:
+
+- a fixed Agon domain tag
+- the program id
+- the chain id
+
+That means the signed domain is deployment-specific. A message signed for one deployment should not verify on another deployment with a different program id or chain id.
+
+### Compact integers
+
+Participant ids, cumulative amounts, and fees use compact unsigned integer encoding in the signed message. In the test helpers this is implemented as `encodeCompactU64`.
+
+### Token id
+
+`token_id` is stored as a little-endian `u16` in both message types.
 
 ## `agon-cmt-v4`
 
-This message authorizes one unilateral lane up to a cumulative amount.
+This is the unilateral lane message used by:
+
+- `settle_individual`
+- `settle_commitment_bundle`
+
+### Layout
 
 | Field | Meaning |
 | --- | --- |
@@ -23,9 +61,74 @@ This message authorizes one unilateral lane up to a cumulative amount.
 | `fee_amount` | Optional settlement fee |
 | `fee_recipient_id` | Optional fee recipient participant id |
 
+### Flags
+
+| Bit | Meaning |
+| --- | --- |
+| `0x01` | `authorized_settler` is present |
+| `0x02` | `fee_amount` and `fee_recipient_id` are present |
+
+No other flag bits are valid in V4.
+
+### Practical Meaning
+
+`committed_amount` is cumulative, not incremental.
+
+If the lane is already settled to `1_000_000` and the new message says `1_250_000`, then the settlement delta is `250_000`.
+
+### Reference Builder
+
+This helper matches the V4 test suite:
+
+```ts
+function createCommitmentMessage(params: {
+  payerId: number;
+  payeeId: number;
+  tokenId: number;
+  committedAmount: anchor.BN;
+  messageDomain: Buffer;
+  authorizedSettler?: PublicKey;
+  feeAmount?: anchor.BN;
+  feeRecipientId?: number;
+}): Buffer {
+  const flags =
+    (params.authorizedSettler ? 1 : 0) |
+    (params.feeAmount && params.feeRecipientId !== undefined ? 2 : 0);
+
+  const bodyParts = [
+    Buffer.from(encodeCompactU64(BigInt(params.payerId))),
+    Buffer.from(encodeCompactU64(BigInt(params.payeeId))),
+    new anchor.BN(params.tokenId).toArrayLike(Buffer, "le", 2),
+    Buffer.from(
+      encodeCompactU64(BigInt(params.committedAmount.toString()))
+    ),
+  ];
+
+  if (params.authorizedSettler) {
+    bodyParts.push(params.authorizedSettler.toBuffer());
+  }
+
+  if (params.feeAmount && params.feeRecipientId !== undefined) {
+    bodyParts.push(
+      Buffer.from(encodeCompactU64(BigInt(params.feeAmount.toString()))),
+      Buffer.from(encodeCompactU64(BigInt(params.feeRecipientId)))
+    );
+  }
+
+  return Buffer.concat([
+    Buffer.from([0x01, 0x04]),
+    params.messageDomain,
+    Buffer.from([flags]),
+    ...bodyParts,
+  ]);
+}
+```
+
 ## `agon-round-v4`
 
-This message lets a signed participant roster advance many lane targets together.
+This is the cooperative clearing message used by `settle_clearing_round`.
+
+### Layout
 
 | Field | Meaning |
 | --- | --- |
@@ -38,3 +141,60 @@ This message lets a signed participant roster advance many lane targets together
 | `entry_count` | Number of outgoing lane targets in that block |
 | `payee_ref` | Index of the payee inside the signed roster |
 | `target_cumulative` | New cumulative target for that lane |
+
+### How To Read A Round
+
+The round is organized by payer block.
+
+Each block says:
+
+1. which participant is the payer
+2. how many outgoing lane targets that payer is advancing
+3. for each target, which signed participant in the roster is the payee
+4. what the new cumulative amount for that lane should be
+
+That is why `payee_ref` exists. It keeps the message compact by reusing the roster instead of repeating full payee ids for every edge.
+
+### Reference Builder
+
+```ts
+function createClearingRoundMessage(params: {
+  tokenId: number;
+  messageDomain: Buffer;
+  blocks: {
+    participantId: number;
+    entries: {
+      payeeRef: number;
+      targetCumulative: anchor.BN;
+    }[];
+  }[];
+}): Buffer {
+  const dynamicParts: number[] = [];
+
+  for (const block of params.blocks) {
+    dynamicParts.push(...encodeCompactU64(BigInt(block.participantId)));
+    dynamicParts.push(block.entries.length & 0xff);
+
+    for (const entry of block.entries) {
+      dynamicParts.push(entry.payeeRef & 0xff);
+      dynamicParts.push(
+        ...encodeCompactU64(BigInt(entry.targetCumulative.toString()))
+      );
+    }
+  }
+
+  return Buffer.concat([
+    Buffer.from([0x02, 0x04]),
+    params.messageDomain,
+    new anchor.BN(params.tokenId).toArrayLike(Buffer, "le", 2),
+    Buffer.from([params.blocks.length & 0xff]),
+    Buffer.from(dynamicParts),
+  ]);
+}
+```
+
+## Which Message To Use
+
+Use `agon-cmt-v4` when one payer is updating one lane.
+
+Use `agon-round-v4` when several participants are willing to sign one shared message so that several lane updates can be settled together and the final balance changes can be reduced to the residual amounts that still matter.

@@ -1,10 +1,48 @@
 ---
 title: "Cooperation, Trust, And Collateral"
-description: "The scaling levers Agon treats as first-class."
+description: "How Agon lets different payment relationships choose different safety and efficiency tradeoffs."
 ---
 
-Agon does not assume every machine-payment relationship looks the same.
+Agon does not force every payment relationship into the same shape.
 
-Some counterparties will want fully collateralized lanes. Others will rely more heavily on trust and reputation between settlements. Many relationships will sit somewhere in the middle. Agon treats that as a protocol-level design reality rather than something to hide behind one default path.
+Some teams want fully pre-funded lanes with heavy use of locked balance. Others are comfortable settling periodically because the relationship is trusted, well-monitored, or small enough that temporary exposure is acceptable. Many real integrations sit somewhere in the middle.
 
-This is why the protocol is best understood as a cooperative clearing layer. It gives repeated relationships room to choose how much they want to pay in capital lockup, settlement frequency, and trust minimization. The goal is not to eliminate trust in every case. The goal is to make those tradeoffs explicit and enforceable.
+V4 treats that as a first-class design choice instead of pretending every relationship is identical.
+
+## The Three Main Levers
+
+In practice, Agon gives builders three levers:
+
+### 1. Locked funds
+
+You can lock part of a payer's balance to a specific lane. That gives the payee stronger protection because that amount is ring-fenced for the relationship.
+
+### 2. Settlement frequency
+
+You can settle often or rarely. More frequent settlement means less offchain exposure. Less frequent settlement means better compression.
+
+### 3. Operational trust
+
+You can let one side submit settlements directly, or you can add operator services with `authorized_settler` for batching, compliance, retries, or payment operations.
+
+## What Trust Does And Does Not Mean
+
+In Agon, "trust" does not mean an operator holds balances in a private database. Balances still live in protocol state.
+
+It means something narrower:
+
+- how much unsigned time you are willing to allow between settlement checkpoints
+- how much locked balance the payee expects
+- whether an operator helps with submission or monitoring
+
+That is why Agon is non-custodial without claiming that every relationship is equally trust-minimized at every moment.
+
+## Simple Examples
+
+An internal company service paying another internal service might settle infrequently and use little or no locked balance.
+
+A public API charging unknown users might require locked funds before serving requests.
+
+A high-volume provider with known customers might rely on periodic bundle settlement and only lock part of expected usage.
+
+All three relationships can use the same protocol. They simply choose different points on the safety-versus-efficiency spectrum.

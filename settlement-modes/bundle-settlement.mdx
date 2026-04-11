@@ -1,10 +1,93 @@
 ---
 title: "Bundle Settlement"
-description: "Many unilateral commitments for one payee can settle in bundles."
+description: "How one payee settles many `agon-cmt-v4` messages in one transaction."
 ---
 
-Bundle settlement keeps the signed primitive simple.
+Bundle settlement is the payee-side compression path.
 
-Agon does not introduce a separate bundle message type. Instead, one transaction verifies many independent `agon-cmt-v4` messages for one payee and advances many lanes together.
+The signed primitive does not change. Each payer still signs its own `agon-cmt-v4` message for its own lane. The payee simply settles many of those messages together with `settle_commitment_bundle`.
 
-That design keeps buyer-side signing uniform, gives the payee transaction compression, and avoids expanding the protocol surface with a second unilateral message family.
+## Why This Path Exists
+
+Bundle settlement is useful when one provider has many incoming payments in the same token.
+
+Without bundling, that provider would submit one settlement transaction per payer. With bundling, the provider can move several lanes forward in one transaction while keeping buyer-side signing simple.
+
+## What Must Be True For A Bundle
+
+All bundle entries must:
+
+1. point to the same payee
+2. use the same token
+3. reference unique lanes
+4. have a valid current signer for each lane
+5. have a submitter that is allowed for each message
+
+If the signed messages include fees, the fee recipient must also be consistent across the bundle.
+
+## How Accounts Are Passed
+
+The bundle instruction keeps its main accounts small:
+
+- `payee_account`
+- `submitter`
+
+Then it reads the rest from `remaining_accounts`.
+
+For each bundle entry, the transaction passes:
+
+1. the payer participant account
+2. the corresponding `channel-v2` account
+
+So the layout is:
+
+`[payer_1, channel_1, payer_2, channel_2, ...]`
+
+If the fee recipient is not already one of the bundle participants, one extra fee-recipient participant account is passed as the leading remaining account.
+
+## What The Program Verifies
+
+For each entry, the program checks:
+
+1. the Ed25519 signature is present and valid
+2. the signed message parses as `agon-cmt-v4`
+3. the token is allowlisted and matches the rest of the bundle
+4. the passed channel is the canonical `channel-v2` PDA for that payer, payee, and token
+5. the lane signer matches the channel's `authorized_signer`
+6. the cumulative amount moves forward
+7. the payer has enough total balance
+
+After validation, the program applies all lane updates, credits the payee once, and applies the shared fee-recipient credit if needed.
+
+## Minimal Example
+
+```ts
+await program.methods
+  .settleCommitmentBundle(bundleEntries.length)
+  .accounts({
+    payeeAccount: payee.participantPda,
+    submitter: payee.wallet.publicKey,
+  } as any)
+  .remainingAccounts(
+    channels.flatMap(({ payerParticipantPda, channelPda }) => [
+      { pubkey: payerParticipantPda, isSigner: false, isWritable: true },
+      { pubkey: channelPda, isSigner: false, isWritable: true },
+    ])
+  )
+  .preInstructions([createMultiMessageEd25519Instruction(bundleEntries)])
+  .signers([payee.wallet])
+  .rpc();
+```
+
+## When To Use This Path
+
+Use bundle settlement when one payee is collecting many signed unilateral commitments and wants transaction compression without needing every participant in the set to coordinate.
+
+This is usually the right path for:
+
+- gateways
+- APIs
+- data providers
+- marketplaces with one receiver and many payers
+
+If several participants want to clear together and let payments cancel each other out first, move to [cooperative clearing rounds](/settlement-modes/cooperative-clearing-rounds).

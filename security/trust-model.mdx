@@ -1,10 +1,68 @@
 ---
 title: "Trust Model"
-description: "What Agon assumes and what it does not."
+description: "What Agon guarantees onchain, and what still depends on the relationship between participants."
 ---
 
-Agon is permissionless and non-custodial, but it does not assume that every payment relationship should be modeled with the same level of trust minimization.
+Agon is non-custodial, but it is not based on the idea that every machine-payment relationship should look fully trustless at every moment.
 
-The protocol rules are public and enforceable onchain. Balances live in protocol state rather than in an operator database. At the same time, counterparties can still choose how much a relationship relies on collateral, reputation, or periodic settlement between onchain checkpoints.
+That distinction is important.
 
-That makes Agon different from managed micropayment products that still depend on one operator to settle users, and from routing networks where each payment pays path-dependent liquidity costs. Agon is designed for repeated machine-commerce relationships that want non-custodial settlement without forcing every interaction through the full cost of exact final settlement.
+## What The Protocol Guarantees
+
+Agon guarantees these things onchain:
+
+1. balances live in protocol state, not in an operator database
+2. only allowlisted tokens can be used
+3. signed settlement messages are checked against the deployment message domain
+4. lanes and participants are checked against canonical PDAs
+5. settlement only moves cumulative state forward
+6. withdrawals, lane unlocks, and signer rotations follow the configured timelocks
+
+If a valid settlement message is submitted with the right accounts, the protocol enforces it according to those rules.
+
+## What Still Depends On The Relationship
+
+Agon does not remove all real-world tradeoffs between participants.
+
+For example:
+
+- one payee may require heavy lane locking
+- another may accept periodic settlement and less locked balance
+- one integration may settle every few seconds
+- another may settle in larger batches
+- one team may run settlement directly
+- another may use an operator through `authorized_settler`
+
+Those are product and relationship choices built on top of the same protocol.
+
+## What "Trust" Usually Means In Agon
+
+In most Agon integrations, trust means one or more of these things:
+
+1. how much unsettled usage a payee is willing to tolerate
+2. how much locked balance a payer is willing to dedicate to one lane
+3. how much the parties rely on offchain monitoring, retries, and operator tooling
+
+It does **not** mean the user has handed custody of protocol balances to a centralized ledger.
+
+## Operators And Delegated Submission
+
+Agon supports optional operator layers on top through `authorized_settler`.
+
+That lets a team delegate submission work such as:
+
+- relaying
+- batching
+- retries
+- invoicing
+- compliance checks
+
+But the current V4 design keeps the payee's direct settlement path. `authorized_settler` is additive, not exclusive. That is an intentional choice because it avoids turning normal unilateral settlement into an operator-gated escrow path.
+
+## The Right Mental Model
+
+The safest way to think about Agon is this:
+
+Agon is a public settlement and clearing protocol for repeated machine-payment relationships.
+
+It gives those relationships room to choose how much they want to pay in locked capital, settlement frequency, and operational overhead. The protocol makes those tradeoffs explicit instead of pretending that one payment model should fit every relationship.

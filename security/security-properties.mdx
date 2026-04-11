@@ -1,26 +1,78 @@
 ---
 title: "Security Properties"
-description: "The security properties of Agon V4 that matter most."
+description: "The protocol checks in V4 that matter most to builders."
 ---
 
-Agon V4 tightened the replay and account-binding edges that matter most for long-lived lanes and offchain settlement.
+Agon V4 tightened the parts of the protocol that matter most for long-lived identities, permanent lanes, and offchain signed settlement.
+
+This page focuses on the checks a builder actually needs to understand, not on generic security language.
 
 ## Signed Domain Separation
 
-`message_domain` is derived inside the program from a fixed Agon tag, the `program_id`, and the `chain_id`. The deployment-scoped signing domain is therefore enforced by the protocol itself rather than trusted to bootstrap tooling.
+Every signed message includes `message_domain`.
 
-## Distinct Chain IDs
+In V4, that value is derived inside the program from:
 
-Mainnet, devnet, testnet, and localnet all use distinct chain IDs, so the derived message domain changes across environments.
+1. a fixed Agon domain tag
+2. the program id
+3. the chain id
 
-## Permanent Lanes
+That matters because it prevents deploy-time tooling mistakes from silently choosing a bad signing domain. The protocol itself decides what domain is valid.
 
-By removing close and reopen lane cycles, V4 removes a whole class of replay complexity. Old commitments cannot be replayed into a reopened lane instance because reopened lane instances no longer exist as a concept.
+## Distinct Chain IDs Per Environment
+
+Mainnet, devnet, testnet, and localnet all use different chain ids in V4.
+
+That means the derived `message_domain` changes across environments. A message signed for devnet should not verify on mainnet, and vice versa.
+
+## Permanent Participants And Permanent Lanes
+
+V4 removed participant recycling and lane close-and-reopen flows.
+
+That matters because it removes a whole class of replay complexity:
+
+- participant ids do not get reused
+- lanes do not need `lane_generation`
+- there is no reopened lane instance for an old signed message to target
+
+The tradeoff is more long-lived state. The benefit is simpler and safer semantics.
 
 ## Canonical PDA Checks
 
-Settlement paths validate canonical participant and `channel-v2` PDAs, not just arbitrary deserializable program-owned accounts.
+Settlement paths do not trust arbitrary program-owned accounts just because they deserialize correctly.
+
+V4 verifies canonical participant PDAs and canonical `channel-v2` PDAs. This matters most in bundle settlement and cooperative clearing rounds, where several accounts arrive through `remaining_accounts`.
 
 ## Monotonic Cumulative Settlement
 
-Every unilateral and cooperative target must advance cumulative state monotonically. Stale replay attempts fail because the protocol only accepts forward movement.
+Both unilateral commitments and cooperative rounds must move lane state forward.
+
+If a signed message tries to settle to a cumulative amount that is less than or equal to the current settled amount, the protocol rejects it.
+
+This is the core stale-replay defense inside one permanent lane.
+
+## Timelocked Lane Maintenance
+
+V4 also puts time in front of the actions that would otherwise surprise the other side of the relationship:
+
+1. unlocking lane-specific locked funds
+2. rotating the lane's `authorized_signer`
+
+Those actions require a request step and an execution step separated by the configured timelock. This gives the payee time to settle recent commitments before locked funds disappear or a signing key changes.
+
+## Self-Channel Rejection
+
+V4 explicitly rejects self-channels.
+
+That prevents a payer from creating a lane to itself and using settlement to bypass the lane-unlock timing model.
+
+## What These Checks Add Up To
+
+Taken together, these checks mean:
+
+1. signed messages are bound to one deployment
+2. account lookups are bound to canonical state
+3. settlement only moves forward
+4. lane maintenance cannot surprise the other side instantly
+
+That does not mean every relationship is risk free between settlements. It means the protocol edges are explicit and enforceable.

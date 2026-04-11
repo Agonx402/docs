@@ -1,10 +1,117 @@
 ---
 title: "Cooperative Clearing Rounds"
-description: "How Agon compresses many bilateral obligations into one shared signed round."
+description: "How one signed roster can advance many lanes and apply only residual balance changes."
 ---
 
-Cooperative clearing rounds use `agon-round-v4`.
+Cooperative clearing rounds are the densest settlement path in Agon V4.
 
-Every participant in the round signs the same shared message. That message names the participant roster, identifies the token, and lists lane targets by participant block and payee reference.
+Instead of each lane settling independently, a group of participants signs one shared `agon-round-v4` message. That round advances many lane targets at once and updates only the participant balances that still need to move after the included payments cancel each other out.
 
-When the round settles, the protocol advances every included lane, computes the net balance effect across the roster, and applies only the residual participant balance changes that remain after obligations offset each other. This is the densest settlement path in V4 because it combines lane advancement and netting in a single cooperative step.
+## The Core Idea
+
+Suppose Alice owes Bob, Bob owes Carol, and Carol owes Alice.
+
+If every lane settles independently, the protocol still has to touch each participant balance for each edge.
+
+If all three sign one clearing round, the protocol can:
+
+1. move each lane's cumulative amount forward
+2. compute the net effect on each participant
+3. apply only the residual balance changes that remain
+
+That is what people mean by "multilateral clearing" in Agon.
+
+## What Is Signed
+
+`agon-round-v4` signs:
+
+1. the deployment message domain
+2. one shared token id
+3. the participant roster
+4. each participant block's outgoing lane targets
+
+Each block names the payer by `participant_id`. Each entry inside the block points to the payee by `payee_ref`, which is an index into the signed roster.
+
+This makes the message compact because the round does not need to repeat full payer and payee ids for every edge.
+
+## What The Program Verifies
+
+When `settle_clearing_round` runs, the program checks:
+
+1. the Ed25519 instruction is present and self-contained
+2. every signer signed the exact same round message
+3. the number of signers matches the participant roster length
+4. each participant account is the canonical PDA for the participant block it represents
+5. each channel account is the canonical `channel-v2` PDA for the payer, payee, and token it represents
+6. every target cumulative amount moves forward
+7. every participant with a negative final position has enough balance to cover it
+
+Only after those checks pass does the program write the new lane states and apply the net participant balance changes.
+
+## What Changes Onchain
+
+A clearing round updates two kinds of state:
+
+### Lane state
+
+Every included lane gets a new `settled_cumulative`. If the lane had locked balance, the round consumes that first.
+
+### Participant balances
+
+After all lane deltas are known, the program computes the net change per participant and applies only those residual changes.
+
+That is why a clearing round can be much denser than settling each edge independently.
+
+## Minimal Example
+
+```ts
+const message = createClearingRoundMessage({
+  tokenId: 1,
+  blocks: [
+    {
+      participantId: aToB.channel.payerId,
+      entries: [{ payeeRef: 1, targetCumulative: nextA }],
+    },
+    {
+      participantId: bToC.channel.payerId,
+      entries: [{ payeeRef: 2, targetCumulative: nextB }],
+    },
+    {
+      participantId: cToA.channel.payerId,
+      entries: [{ payeeRef: 0, targetCumulative: nextC }],
+    },
+  ],
+});
+
+const ed25519Ix = createMultiSigEd25519Instruction(
+  [alice, bob, carol],
+  message
+);
+
+await program.methods
+  .settleClearingRound()
+  .accounts({
+    submitter: alice.publicKey,
+  } as any)
+  .remainingAccounts([
+    { pubkey: aliceParticipantPda, isSigner: false, isWritable: true },
+    { pubkey: bobParticipantPda, isSigner: false, isWritable: true },
+    { pubkey: carolParticipantPda, isSigner: false, isWritable: true },
+    { pubkey: aToB.channelPda, isSigner: false, isWritable: true },
+    { pubkey: bToC.channelPda, isSigner: false, isWritable: true },
+    { pubkey: cToA.channelPda, isSigner: false, isWritable: true },
+  ])
+  .preInstructions([ed25519Ix])
+  .signers([alice])
+  .rpc();
+```
+
+## When To Use This Path
+
+Use cooperative clearing rounds when:
+
+- several participants are already coordinating
+- they are willing to co-sign one shared round
+- there is value in letting payments inside the group cancel each other out first
+
+Today this path is live and useful under Ed25519. Over time, aggregate signatures can make it denser still, but V4 does not depend on that future work to be meaningful.

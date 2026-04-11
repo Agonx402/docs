@@ -1,15 +1,80 @@
 ---
 title: "V4 Overview"
-description: "The shortest practical overview of Agon Protocol V4."
+description: "A builder-first overview of how Agon Protocol V4 works."
 ---
 
-Agon Protocol V4 has a simple external model.
+Agon Protocol V4 is easiest to understand as **shared protocol balances plus signed offchain updates**.
 
-Each wallet registers once as a permanent participant and receives a stable `participant_id` for the lifetime of the deployment. Participants deposit allowlisted tokens into protocol balances. When one participant pays another, they create a permanent directed lane keyed by `payer_id`, `payee_id`, and `token_id`. The payer can lock funds to collateralize that lane, and the parties exchange signed V4 messages offchain as obligations change.
+Each wallet registers once as a permanent participant and receives a stable `participant_id` for the lifetime of the deployment. Participants deposit allowlisted tokens into protocol balances. When one participant pays another, they create a permanent directed lane keyed by `payer_id`, `payee_id`, and `token_id`. The payer can lock funds to that lane if the relationship needs stronger guarantees. From there, the parties exchange signed V4 messages offchain as the amount due changes.
 
-V4 uses two message formats. `agon-cmt-v4` authorizes a cumulative amount for one lane. `agon-round-v4` lets a group of participants sign one shared clearing round that advances many lane targets at once.
+V4 uses two signed message formats:
 
-Those messages feed three settlement paths. The simplest path settles the latest commitment for one lane. Bundle settlement advances many lanes for one payee in one transaction. Cooperative clearing rounds advance many lanes together and apply only the residual balance changes that remain after netting.
+- `agon-cmt-v4` for one directed lane
+- `agon-round-v4` for one shared cooperative clearing round
+
+Those messages feed three settlement paths. The simplest path settles the latest commitment for one lane. Bundle settlement advances many lanes for one payee in one transaction. Cooperative clearing rounds advance many lanes together and apply only the residual balance changes that remain after the included payments cancel each other out.
+
+## The Four Main Onchain Objects
+
+| Object | What it stores | Why it exists |
+| --- | --- | --- |
+| `GlobalConfig` | Authority, fee settings, chain id, message domain, timelock policy | Defines the deployment and the signing domain |
+| `TokenRegistry` | The allowlisted settlement tokens | Makes token support explicit instead of implicit |
+| `ParticipantAccount` | Stable `participant_id`, balances, withdrawal state, inbound-lane policy | Gives every wallet one durable protocol identity |
+| `ChannelState` | One directed lane's token, payer, payee, settled cumulative amount, locked funds, signer state | Tracks the durable relationship between one payer and one payee |
+
+## What Stays Offchain
+
+The hot path is offchain. Builders usually keep these things in their own service or client:
+
+1. the latest signed `agon-cmt-v4` per lane
+2. the local meter for how much a user has consumed
+3. bundle-assembly logic for many payers to one payee
+4. cooperative-round construction if several participants want to clear together
+
+Only the newest valid state needs to reach the chain.
+
+## The Normal Lifecycle
+
+In the common case, an integration looks like this:
+
+1. A wallet registers as a participant.
+2. It deposits an allowlisted token into protocol balance.
+3. The payer creates a lane to the payee.
+4. The payer optionally locks part of its balance to that lane.
+5. The payer signs cumulative commitments offchain as usage grows.
+6. The payee, or a delegated submitter, settles the newest state later.
+
+That single model already supports three very different product shapes:
+
+- one buyer paying one provider over time
+- many buyers paying one provider and settling in bundles
+- several parties signing one clearing round to settle only the residual balance changes
+
+## When To Use Each Settlement Mode
+
+Use **latest commitment settlement** when one payer and one payee need the simplest possible flow.
+
+Use **bundle settlement** when one payee has collected signed commitments from many payers in the same token and wants one transaction instead of many.
+
+Use **cooperative clearing rounds** when several parties are willing to co-sign one shared round so that payments inside the group can cancel each other out before balances are updated.
+
+## Why V4 Looks The Way It Does
+
+V4 intentionally chose stable identities and permanent lanes. That means more long-lived onchain state, but it makes the protocol much easier to reason about:
+
+1. participant ids do not recycle
+2. offchain services can index users without worrying about identity reuse
+3. lanes do not close and reopen
+4. signed messages no longer need `lane_generation`
+5. replay protection is simpler
+6. lane keys stay stable for offchain systems
+
+## Build From The Real Flow
+
+If you want to integrate Agon, the best next page is the first payment flow. It shows the real Anchor calls, the real PDA derivations, and the exact unilateral message you need to sign.
+
+- [Go to the first payment flow](/getting-started/first-payment-flow)
 
 ## Current Devnet Deployment
 
@@ -27,3 +92,5 @@ anchor build
 node ./node_modules/typescript/bin/tsc --noEmit
 powershell -ExecutionPolicy Bypass -File scripts/test-local.ps1
 ```
+
+Those commands are useful if you are working from the protocol repo itself. If you only want to integrate the live deployment, you do not need to rebuild the program first.

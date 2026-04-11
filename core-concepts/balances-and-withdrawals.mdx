@@ -1,0 +1,117 @@
+---
+title: "Balances And Withdrawals"
+description: "How participant balances, pending withdrawals, and lane locks work in Agon V4."
+---
+
+Agon keeps user funds in two places:
+
+1. the protocol vault, which holds the real SPL tokens
+2. protocol state, which tracks who is entitled to what inside that vault
+
+That means you should think about balance in two layers:
+
+- **participant balance** inside `ParticipantAccount`
+- **lane lock** inside `ChannelState`
+
+## Participant Balance Has Three Important States
+
+For each allowlisted token, a participant can have:
+
+| State | Meaning |
+| --- | --- |
+| `available_balance` | Spendable inside the protocol right now |
+| `withdrawing_balance` | Amount reserved for a pending withdrawal |
+| `withdrawal_destination` + `withdrawal_unlock_at` | Where a pending withdrawal will go and when it becomes executable |
+
+The first time a participant deposits a token, that amount appears in `available_balance`.
+
+## Lane Locks Are Separate
+
+Lane locks live in `ChannelState.locked_balance`, not in `ParticipantAccount`.
+
+This matters because a participant can have:
+
+- shared available balance that may be used across several relationships
+- plus one or more lane-specific locked amounts that are ring-fenced for specific payees
+
+During settlement, the protocol uses lane-specific locked balance first and shared participant balance second.
+
+## Deposit Flow
+
+Depositing is a normal SPL token transfer from the user's token account into the protocol vault, followed by a credit to protocol balance.
+
+```ts
+await program.methods
+  .deposit(tokenId, new anchor.BN(amount))
+  .accounts({
+    owner: owner.publicKey,
+    participantAccount,
+    ownerTokenAccount,
+    vaultTokenAccount,
+  } as any)
+  .signers([owner])
+  .rpc();
+```
+
+`deposit_for` is the batch version of the same idea. It lets one funder credit several participants in a single transaction.
+
+## Withdrawal Flow
+
+Withdrawals are intentionally two-step on mainnet.
+
+### Step 1: Request
+
+`request_withdrawal` moves funds from `available_balance` to `withdrawing_balance`, records the destination token account, and starts the timelock.
+
+### Step 2: Execute
+
+Once the timelock has expired, `execute_withdrawal_timelocked` transfers the net amount to the destination token account and the fee to the protocol fee recipient's token account.
+
+The withdrawal fee is the larger of:
+
+1. the configured basis-point fee
+2. a minimum fee floor scaled to the token's decimals
+
+On mainnet the timelock is seven days. On devnet, testnet, and localnet the timelock is short so the flow is practical for testing.
+
+## Pending Withdrawal Does Not Mean Final
+
+One important V4 behavior surprises people at first:
+
+A pending withdrawal can still be consumed by later settlement before it is executed.
+
+That happens because a withdrawal request is not final settlement. It is only a request to leave the protocol after the timelock. Until the execute step succeeds, the funds are still part of the participant's total protocol balance.
+
+So if later settlement uses that balance:
+
+- the withdrawal may execute with only the residual amount
+- or it may execute with zero and simply clear the pending state
+
+This behavior is deliberate. It means "requested for withdrawal" is not stronger than "already withdrawn."
+
+## Canceling A Withdrawal
+
+If the participant changes its mind before execution, it can cancel the pending withdrawal. That moves `withdrawing_balance` back to `available_balance` and clears the stored destination and unlock time.
+
+## Lane Unlock Flow
+
+Lane locks have their own two-step flow:
+
+1. `request_unlock_channel_funds`
+2. `execute_unlock_channel_funds`
+
+This is separate from participant withdrawals because lane locks are not the same thing as participant balances.
+
+When a lane unlock executes, the protocol returns `min(pending_unlock_amount, locked_balance)` to the payer's `available_balance`. If later settlement has already used part or all of the locked balance, the unlock releases only what remains.
+
+## Practical Guidance
+
+If you are building a gateway or agent client, these are the balance rules that matter most:
+
+1. deposits increase `available_balance`
+2. lane locks reduce shared flexibility but make one relationship safer
+3. pending withdrawals are not final until executed
+4. settlement can consume both shared balance and lane-specific locks
+5. unlock requests and signer rotations are also timelocked
+
+If you keep those five rules in mind, the rest of the protocol becomes much easier to reason about.
