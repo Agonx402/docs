@@ -5,8 +5,6 @@ description: "What Agon guarantees onchain, and what still depends on the relati
 
 Agon is non-custodial, but it is not based on the idea that every machine-payment relationship should look fully trustless at every moment.
 
-That distinction is important.
-
 ## What The Protocol Guarantees
 
 Agon guarantees these things onchain:
@@ -26,7 +24,7 @@ Agon does not remove all real-world tradeoffs between participants.
 
 For example:
 
-- one payee may require enough locked funds to make signed value effectively trustless
+- one payee may require enough locked funds to make signed value effectively guaranteed
 - another may accept partial lockup or periodic settlement instead
 - one integration may settle every few seconds
 - another may settle in larger batches
@@ -35,7 +33,7 @@ For example:
 
 Those are product and relationship choices built on top of the same protocol.
 
-## What "Trust" Usually Means In Agon
+## What "Trust" Means In Agon
 
 In most Agon integrations, trust means one or more of these things:
 
@@ -43,7 +41,7 @@ In most Agon integrations, trust means one or more of these things:
 2. how much locked balance a payer is willing to dedicate to one lane
 3. how much the parties rely on offchain monitoring, retries, and operator tooling
 
-It does **not** mean the user has handed custody of protocol balances to a centralized ledger.
+It does not mean the user has handed custody of protocol balances to a centralized ledger.
 
 ## Operators And Delegated Submission
 
@@ -57,6 +55,8 @@ That lets a team delegate submission work such as:
 - invoicing
 - compliance checks
 
-But the current V4 design keeps the payee's direct settlement path. `authorized_settler` is additive, not exclusive. That is an intentional choice because it avoids turning normal unilateral settlement into an operator-gated escrow path.
+But the current V4 design keeps the payee's direct settlement path. `authorized_settler` is additive, not exclusive.
 
-Agon is a public settlement and clearing protocol for repeated machine-payment relationships. It gives those relationships room to choose how much they want to pay in locked capital, settlement frequency, and operational overhead. The protocol makes those tradeoffs explicit instead of pretending that one payment model should fit every relationship.
+## Summary
+
+Agon is a public settlement and clearing protocol for repeated machine-payment relationships. It gives those relationships room to choose how much they want to pay in locked capital, settlement frequency, and operational overhead.

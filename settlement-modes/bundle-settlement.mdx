@@ -5,15 +5,15 @@ description: "How one payee settles many `agon-cmt-v4` messages in one transacti
 
 Bundle settlement is the payee-side compression path.
 
-The signed primitive does not change. Each payer still signs its own `agon-cmt-v4` message for its own lane. The payee simply settles many of those messages together with `settle_commitment_bundle`.
+Each payer still signs its own `agon-cmt-v4` message for its own lane. The payee simply settles several of those messages together with `settle_commitment_bundle`.
 
-## Why This Path Exists
+## Overview
 
 Bundle settlement is useful when one provider has many incoming payments in the same token.
 
-Without bundling, that provider would submit one settlement transaction per payer. With bundling, the provider can move several lanes forward in one transaction while keeping buyer-side signing simple.
+Without bundling, that provider would submit one settlement transaction per payer. With bundling, the provider can move several lanes forward in one transaction while keeping payer-side signing simple.
 
-## What Must Be True For A Bundle
+## Bundle Requirements
 
 All bundle entries must:
 
@@ -25,7 +25,7 @@ All bundle entries must:
 
 If the signed messages include fees, the fee recipient must also be consistent across the bundle.
 
-## How Accounts Are Passed
+## Account Layout
 
 The bundle instruction keeps its main accounts small:
 
@@ -39,7 +39,7 @@ For each bundle entry, the transaction passes:
 1. the payer participant account
 2. the corresponding `channel-v2` account
 
-So the layout is:
+Layout:
 
 `[payer_1, channel_1, payer_2, channel_2, ...]`
 
@@ -53,13 +53,13 @@ For each entry, the program checks:
 2. the signed message parses as `agon-cmt-v4`
 3. the token is allowlisted and matches the rest of the bundle
 4. the passed channel is the canonical `channel-v2` PDA for that payer, payee, and token
-5. the lane signer matches the channel's `authorized_signer`
+5. the signer matches the channel's `authorized_signer`
 6. the cumulative amount moves forward
 7. the payer has enough total balance
 
 After validation, the program applies all lane updates, credits the payee once, and applies the shared fee-recipient credit if needed.
 
-## Minimal Example
+## Example
 
 ```ts
 await program.methods
@@ -81,13 +81,4 @@ await program.methods
 
 ## When To Use This Path
 
-Use bundle settlement when one payee is collecting many signed unilateral commitments and wants transaction compression without needing every participant in the set to coordinate.
-
-This is usually the right path for:
-
-- gateways
-- APIs
-- data providers
-- marketplaces with one receiver and many payers
-
-If several participants want to clear together and let payments cancel each other out first, move to [cooperative clearing rounds](/settlement-modes/cooperative-clearing-rounds).
+Use bundle settlement when one payee is collecting several signed unilateral commitments and wants transaction compression without needing every participant in the set to coordinate.

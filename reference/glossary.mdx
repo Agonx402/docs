@@ -4,9 +4,9 @@ description: "Key terms used throughout the Agon Protocol docs."
 ---
 
 - **Participant**: a permanent wallet-bound protocol identity with a stable `participant_id`
-- **Lane**: a permanent directed payment relationship keyed by `payer_id + payee_id + token_id`
-- **Latest commitment**: the newest unilateral cumulative state for one lane
-- **Bundle settlement**: many unilateral latest commitments for one payee settled in fewer transactions
-- **Clearing round**: one shared signed message that advances many lanes together
+- **Channel**: a permanent one-way payment relationship keyed by `payer_id + payee_id + token_id`
+- **Latest commitment**: the newest unilateral cumulative state for one channel
+- **Bundle settlement**: several unilateral commitments for one payee settled in fewer transactions
+- **Clearing round**: one shared signed message that advances several channels together
 - **Gross routed value**: total value represented by all advanced unilateral obligations before netting
 - **Residual net flow**: the final participant balance change that remains after cooperative offsetting

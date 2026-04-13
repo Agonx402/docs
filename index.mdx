@@ -3,16 +3,39 @@ title: "Agon Protocol"
 description: "A non-custodial clearing protocol for machine payments on Solana."
 ---
 
-Agon Protocol is a **non-custodial clearing protocol for machine payments** on Solana.
+Agon Protocol is a non-custodial clearing protocol for machine payments on Solana.
 
-## If You Are New Here
+Agon lets agents and services make many payments first and settle them later. It is designed for repeated API usage, machine-to-machine commerce, and other payment flows where settling every interaction as its own transfer is too expensive.
 
-Start with the short overview if you want the mental model. Then read the first payment flow if you want to build immediately. After that, use the state, settlement, and message-reference pages as the detailed reference.
+## Quick Start
 
-## Start Here
+If you are new to Agon, start with these pages:
 
 - [V4 overview](/getting-started/v4-overview)
 - [First payment flow](/getting-started/first-payment-flow)
-- [Why cooperative scaling matters](/thesis/cooperative-scaling)
 - [Run the devnet demo](/getting-started/devnet-demo)
 - [See live benchmark artifacts](/benchmarks/generated-live-devnet)
+
+## What Agon Includes
+
+Agon V4 includes:
+
+- permanent participant identities
+- permanent one-way payment channels
+- signed cumulative commitments
+- direct settlement
+- bundle settlement
+- cooperative clearing rounds
+
+## Common Use Cases
+
+Agon is a good fit for:
+
+- agent payments for APIs and infrastructure
+- repeated buyer-to-provider payment flows
+- payment hubs and operator services
+- payment flows that need guaranteed or trust-minimized options
+
+## Where To Go Next
+
+Read [V4 overview](/getting-started/v4-overview) for the protocol model, then use [First payment flow](/getting-started/first-payment-flow) to build the smallest useful integration.

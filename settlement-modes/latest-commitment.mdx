@@ -7,31 +7,27 @@ Latest commitment settlement is the simplest Agon path.
 
 One payer signs one `agon-cmt-v4` message for one lane. The payee, or a delegated submitter named in the message, submits it later with `settle_individual`.
 
-## What The Signed Message Means
+## Overview
 
-The message does not say "charge 25 more."
+The signed message does not say "charge 25 more."
 
-It says:
-
-"This lane is now authorized up to cumulative amount X."
+It says: this lane is now authorized up to cumulative amount `X`.
 
 The protocol compares that new cumulative amount to the lane's current `settled_cumulative` and settles only the difference.
 
-That is why the payee only needs the newest valid message. Older messages are useful for local metering, but they do not all need to be settled onchain.
+That is why the payee only needs the newest valid message.
 
 ## What The Program Verifies
 
 When `settle_individual` runs, the program checks:
 
 1. the Ed25519 instruction is present and self-contained
-2. the signer of the message matches the lane's current `authorized_signer`
+2. the signer matches the lane's current `authorized_signer`
 3. the signed `message_domain` matches the deployment
-4. the message payer, payee, and token match the passed participant accounts and lane
+4. the message payer, payee, and token match the passed participant accounts and channel
 5. the submitter is either the payee owner or the optional `authorized_settler`
 6. the new cumulative amount is greater than the existing `settled_cumulative`
 7. the payer has enough total balance, counting locked lane balance first and shared participant balance second
-
-If any of those checks fail, settlement fails.
 
 ## What Changes Onchain
 
@@ -43,9 +39,7 @@ If the checks pass, the program:
 4. credits the payee
 5. credits the fee recipient if the signed message includes fee fields
 
-That is the whole direct path.
-
-## Minimal Example
+## Example
 
 ```ts
 const message = createCommitmentMessage({
@@ -80,7 +74,5 @@ Use latest commitment settlement when:
 
 - one payer and one payee interact repeatedly
 - you want the smallest possible protocol surface
-- you do not need a payee-side bundle yet
-- you do not need a cooperative round yet
-
-It is also the best place to start when you are integrating Agon for the first time, because every other settlement mode builds on the same basic ideas.
+- you do not need bundle settlement yet
+- you do not need cooperative clearing yet

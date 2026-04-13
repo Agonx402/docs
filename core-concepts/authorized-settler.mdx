@@ -3,43 +3,43 @@ title: "Authorized Settler"
 description: "Why `authorized_settler` exists and what delegated settlement enables in Agon V4."
 ---
 
-`authorized_settler` exists so a channel can delegate **settlement submission** without changing who signed the payment update.
+`authorized_settler` lets a payment commitment name an additional submitter without changing who signed the payment update.
 
-That distinction is important.
+The distinction is simple:
 
-The channel's `authorized_signer` still signs the economic state. `authorized_settler` only adds another key that is allowed to submit that signed state onchain.
+- `authorized_signer` signs the payment update
+- `authorized_settler` can submit that signed update onchain
 
-## Why This Feature Exists
+## Overview
 
-Many teams do not want to run settlement operations themselves.
+Many teams do not want to run settlement operations themselves. They may want a third party to handle relaying, batching, invoicing, compliance checks, or payment operations.
 
-They may want an external service to handle:
+`authorized_settler` gives them a protocol-level way to delegate submission while keeping balances in protocol state.
 
-1. relaying
-2. retries
-3. batching
-4. invoicing
-5. compliance checks
-6. payment operations in general
+## Common Use Cases
 
-`authorized_settler` gives them a native protocol mechanism for that delegation while keeping balances in protocol state.
+Common examples include:
 
-If you want the bigger architectural pattern that often sits on top of this feature, read [Operator Hubs](/core-concepts/operator-hubs).
+- payment gateways
+- invoicing providers
+- compliance and KYT services
+- operator hubs
+- internal payment operations services
 
-One common pattern is a hub or operator that receives user commitments on one set of channels and pays providers on another. In that setup, `authorized_settler` helps with submission and settlement operations, while the hub model itself comes from the channel graph and the operator's business logic.
+If you want the larger network pattern that often sits on top of this feature, read [Operator Hubs](/core-concepts/operator-hubs).
 
-## What It Means Today
+## How It Works
 
-In V4, `authorized_settler` is **additive**, not exclusive.
+In V4, `authorized_settler` is additive, not exclusive.
 
 If a commitment includes `authorized_settler`, then either of these may submit it:
 
 1. the payee owner
 2. the delegated settler named in the signed message
 
-That design is intentional. It lets teams use operators without taking away the payee's direct settlement path.
+This design keeps the payee's direct settlement path intact while still allowing operational delegation.
 
-## What It Applies To
+## Where It Applies
 
 `authorized_settler` only applies to unilateral commitment messages:
 
@@ -48,7 +48,7 @@ That design is intentional. It lets teams use operators without taking away the 
 
 It does not affect cooperative clearing rounds because those rounds are keyed to the signed participant roster, not to a delegated unilateral submitter.
 
-## Minimal Example
+## Example
 
 ```ts
 const message = createCommitmentMessage({
@@ -65,16 +65,11 @@ After that message is signed by the channel's `authorized_signer`, either the pa
 
 ## Fees Are Separate
 
-`authorized_settler` does not automatically receive a fee.
+`authorized_settler` does not automatically receive a fee. If the operator should be paid, the commitment must also include `fee_amount` and `fee_recipient_id`.
 
-If the operator should be paid, the commitment must also include:
+Those fields are independent from `authorized_settler`. A delegated settler can be unpaid, and a payee can still submit a message that routes the fee to the operator if the operator was named as the fee recipient in the signed message.
 
-1. `fee_amount`
-2. `fee_recipient_id`
-
-Those fields are independent from `authorized_settler`. A delegated settler can be unpaid, and a payee can submit a message that still routes the fee to an operator participant if that operator was named as the fee recipient in the signed message.
-
-## What It Does Not Do
+## Limits
 
 The current V4 feature is not an escrow primitive.
 
@@ -85,4 +80,4 @@ It does not:
 3. add dispute-resolution logic
 4. let an external program control settlement policy onchain
 
-Those ideas may be useful later, but they are separate features. Today `authorized_settler` is best understood as **delegated submission for unilateral settlement**.
+Today, `authorized_settler` is best understood as delegated submission for unilateral settlement.

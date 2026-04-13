@@ -3,34 +3,41 @@ title: "Cooperative Scaling"
 description: "Why Agon treats repeated machine payments as a clearing problem instead of a one-transaction-per-payment problem."
 ---
 
-Agon treats repeated machine payments as a **clearing problem** rather than a one-transaction-per-payment problem.
+Agon treats repeated machine payments as a clearing problem instead of a one-transaction-per-payment problem.
 
-## The Problem With One Settlement Per Interaction
+## Overview
 
-If every API call, tool invocation, or agent action settles as its own final payment, each payment carries the same constant cost. That can be acceptable for occasional payments, but it breaks down when the same parties interact thousands or millions of times.
+If every API call, tool invocation, or agent action settles as its own final payment, each payment carries the same settlement cost. That can be acceptable for occasional payments. It becomes inefficient when the same parties interact thousands or millions of times.
 
-## What Changes In Agon
+Agon changes that by letting payment execution happen first and settlement happen later.
 
-Agon solves this with deferred settlement. Instead of settling every interaction independently, the payer signs cumulative updates and the payee settles later. Only the newest valid state matters onchain.
+## How It Scales
 
-That means the same relationship can scale in stages:
+Agon scales in stages:
 
 1. one latest commitment compresses many offchain updates into one settlement
-2. bundle settlement compresses many payers to one payee
-3. cooperative clearing rounds compress a signed group of lane updates even further by applying only the residual balance changes that remain after payments cancel each other out
+2. bundle settlement lets one payee settle several commitments together
+3. cooperative clearing lets several participants settle together and apply only the residual balance changes that remain after payments cancel each other out
 
-## What "Cooperative" Means Here
+## What "Cooperative" Means
 
 Not every Agon payment is cooperative.
 
-One payer can open a one-way payment channel, sign cumulative commitments, and let the payee settle later without asking anyone else to co-sign each update. That flow can be fully trustless for the signed value if enough funds are locked and the payee settles before those locked funds can be released.
+One payer can open a one-way payment channel, sign cumulative commitments, and let the payee settle later without asking anyone else to co-sign each update.
 
 Cooperation starts when two or more participants agree on a shared state update. That is what happens in bilateral clearing and multilateral clearing rounds: the participants sign one shared message so several payment channels can be cleared together.
 
-## The Important Nuance
+## Why This Matters
 
-Multilateral clearing is the densest settlement mode in V4, but it is not the entire thesis.
+Multilateral clearing is the densest settlement mode in V4, but it is not the whole point.
 
-The broader claim is simpler:
+The main idea is simple: repeated machine-payment relationships do not need to be modeled as isolated one-off transfers. They can be modeled as long-lived clearing relationships with explicit balances, explicit signed state, and deferred settlement.
 
-Repeated machine-payment relationships do not need to be modeled as isolated one-off transfers. They can be modeled as long-lived clearing relationships with explicit balances, explicit signed state, and deferred settlement.
+## Common Use Cases
+
+This model is useful for:
+
+- repeated API payments
+- agent infrastructure usage
+- operator hubs
+- payment networks where several known parties settle together

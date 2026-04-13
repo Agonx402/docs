@@ -5,15 +5,7 @@ description: "The full onchain instruction surface of Agon Protocol V4."
 
 This page lists the instruction surface exactly as it exists in the V4 program.
 
-You do not need every instruction for every integration. Most builders care about a small subset:
-
-1. participant registration
-2. deposits
-3. lane creation
-4. optional lane locking
-5. one of the settlement paths
-
-Still, it is useful to know the full surface because it shows which parts of the protocol are normal hot-path actions and which parts are one-time admin or maintenance flows.
+Most integrations only need a small subset, but it is useful to know the full surface.
 
 ## Bootstrap And Admin
 
@@ -38,13 +30,13 @@ Nominates a pending registry authority.
 `accept_registry_authority`  
 Completes the two-step registry authority handoff.
 
-## Participant Lifecycle
+## Participants
 
 `initialize_participant`  
 Registers one wallet as one permanent participant.
 
 `update_inbound_channel_policy`  
-Sets whether inbound lanes are permissionless, consent-based, or disabled.
+Sets whether inbound channels are permissionless, consent-based, or disabled.
 
 ## Funding And Withdrawals
 
@@ -63,22 +55,22 @@ Cancels a pending withdrawal and returns the amount to available participant bal
 `execute_withdrawal_timelocked`  
 Transfers the withdrawal out of the vault once the timelock has expired.
 
-## Lane Management
+## Channels
 
 `create_channel`  
 Creates one permanent one-way payment channel from payer to payee for one token.
 
 `lock_channel_funds`  
-Moves part of the payer's participant balance into lane-specific locked balance.
+Moves part of the payer's participant balance into channel-specific locked balance.
 
 `request_unlock_channel_funds`  
-Starts a timelocked request to return some locked lane balance to the payer's shared balance.
+Starts a timelocked request to return some locked channel balance to the payer's shared balance.
 
 `execute_unlock_channel_funds`  
 Executes that unlock after the timelock.
 
 `request_update_channel_authorized_signer`  
-Starts a timelocked lane-signer rotation.
+Starts a timelocked channel-signer rotation.
 
 `execute_update_channel_authorized_signer`  
 Executes the signer rotation after the timelock.
@@ -86,7 +78,7 @@ Executes the signer rotation after the timelock.
 ## Settlement
 
 `settle_individual`  
-Settles one `agon-cmt-v4` message for one lane.
+Settles one `agon-cmt-v4` message for one channel.
 
 `settle_commitment_bundle`  
 Settles many `agon-cmt-v4` messages in one transaction for one payee.
@@ -94,7 +86,7 @@ Settles many `agon-cmt-v4` messages in one transaction for one payee.
 `settle_clearing_round`  
 Settles one `agon-round-v4` message signed by a roster of participants and applies only the residual balance changes after the included payments cancel each other out.
 
-## Which Instructions Most Builders Actually Need
+## Most Integrations Need
 
 If you are building a provider, gateway, or agent client, the smallest useful subset is usually:
 

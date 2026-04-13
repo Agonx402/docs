@@ -3,9 +3,19 @@ title: "First Payment Flow"
 description: "A builder's guide for registering, funding, opening a lane, signing a commitment, and settling it."
 ---
 
-This guide shows the smallest useful Agon integration: one payer, one payee, one token, one lane, and one settled `agon-cmt-v4` message.
+This guide shows the smallest useful Agon integration: one payer, one payee, one token, one payment channel, and one settled `agon-cmt-v4` message.
 
-The examples below use the generated Anchor client and mirror the real protocol tests in the V4 repo. Until a dedicated SDK lands, this is the most direct way to integrate the protocol.
+The examples below mirror the real V4 protocol tests. Until a dedicated SDK lands, this is the most direct way to integrate Agon.
+
+## What You'll Build
+
+By the end of this guide, you will have:
+
+1. two registered participants
+2. one funded payer
+3. one open payment channel
+4. one signed unilateral commitment
+5. one successful settlement
 
 ## 1. Create The Program Client
 
@@ -23,7 +33,7 @@ const program = anchor.workspace.agonProtocol as Program<AgonProtocol>;
 
 ## 2. Derive The Main PDAs
 
-You will use the same PDA scheme everywhere in V4, so it is worth defining these helpers once.
+You will use the same PDA scheme throughout V4, so define these helpers once.
 
 ```ts
 const findParticipantPda = (owner: PublicKey) =>
@@ -93,7 +103,7 @@ const bobParticipant = await program.account.participantAccount.fetch(
 );
 ```
 
-At this point you have two stable participant ids:
+At this point, both wallets have stable participant ids:
 
 ```ts
 console.log(aliceParticipant.participantId);
@@ -102,7 +112,7 @@ console.log(bobParticipant.participantId);
 
 ## 4. Deposit The Settlement Token
 
-Agon settles only allowlisted tokens. After the payer has a normal SPL token account, it can deposit into protocol balance.
+Agon only settles allowlisted tokens. After the payer has a normal SPL token account, it can deposit into protocol balance.
 
 ```ts
 await program.methods
@@ -117,7 +127,7 @@ await program.methods
   .rpc();
 ```
 
-That moves tokens from the payer's token account into the protocol vault and credits the payer's `available_balance` inside `ParticipantAccount`.
+This moves tokens from the payer's token account into the protocol vault and credits the payer's `available_balance`.
 
 ## 5. Create The Lane
 
@@ -145,11 +155,11 @@ await program.methods
   .rpc();
 ```
 
-The `payeeOwner` signer is only needed when the payee's inbound-lane policy requires consent. If the payee has switched to `Permissionless`, lane creation does not need the payee to sign.
+The `payeeOwner` signer is only needed when the payee's inbound-channel policy requires consent. If the payee uses `Permissionless`, lane creation does not need the payee to sign.
 
 ## 6. Optionally Lock Funds To The Lane
 
-Locked funds are not required for every relationship, but they are useful when the payee wants stronger guarantees.
+Locked funds are optional. Use them when the payee wants guaranteed payment capacity on that channel.
 
 ```ts
 await program.methods
@@ -164,7 +174,7 @@ await program.methods
   .rpc();
 ```
 
-When settlement later happens, the program spends locked balance first and shared participant balance second.
+During settlement, the program spends locked balance first and shared participant balance second.
 
 ## 7. Build The `agon-cmt-v4` Message
 
@@ -228,7 +238,7 @@ function createCommitmentMessage(params: {
 }
 ```
 
-Now build the first signed commitment:
+Now build the first commitment:
 
 ```ts
 const channel = await program.account.channelState.fetch(channelPda);
@@ -281,7 +291,7 @@ await program.methods
   .rpc();
 ```
 
-The program verifies the Ed25519 instruction, parses the message, checks the deployment message domain, checks the canonical payer, payee, token, and lane, then moves the delta between the old cumulative amount and the new cumulative amount.
+The program verifies the Ed25519 instruction, parses the message, checks the deployment message domain, checks the canonical payer, payee, token, and channel, then moves the delta between the old cumulative amount and the new cumulative amount.
 
 ## 10. Read The Result
 
@@ -292,7 +302,9 @@ After settlement:
 3. the payee balance has gone up by the same amount
 4. any locked funds used by the settlement have been consumed first
 
-That is the entire direct path.
+That is the full direct settlement flow.
+
+## What's Next
 
 Once this flow works, the next useful steps are:
 

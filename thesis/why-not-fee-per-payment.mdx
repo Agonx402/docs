@@ -5,9 +5,9 @@ description: "Why exact payment on every interaction hits a constant-cost floor.
 
 Exact payment per interaction is simple to explain because each request settles independently.
 
-The problem is that every request inherits the same fixed settlement cost, even when the underlying work is tiny.
+The problem is that every request inherits the same settlement cost, even when the underlying work is tiny.
 
-## Where The Cost Comes From
+## Overview
 
 Per-payment settlement usually means that each interaction needs its own settlement transaction and its own fee. That is fine when payments are large or infrequent. It becomes inefficient when an agent is making many very small requests to the same provider.
 
@@ -17,14 +17,22 @@ Agon uses deferred settlement. Payment execution happens first through signed cu
 
 This does not eliminate cost. It changes where the cost appears. Instead of paying the full settlement cost every time, the relationship pays for occasional settlement.
 
-Agon does not force you into deferred settlement, though. A provider can still require sign, settle, then serve if it wants exact pay-per-call behavior. The point of the protocol is that it supports both models instead of forcing one.
+Agon does not force you into deferred settlement. A provider can still require sign, settle, then serve if it wants exact pay-per-call behavior.
 
-Deferred settlement also makes yield-bearing settlement assets more interesting. If balances sit in a fixed-balance yield share between settlements, idle capital can keep accruing instead of sitting dead between tiny transactions. That does not make payments free, but it does mean the settlement asset itself can help offset part of the remaining cost.
+Deferred settlement also makes yield-bearing settlement assets more interesting. If balances sit in a fixed-balance yield share between settlements, idle capital can keep accruing instead of sitting dead between tiny transactions.
 
 If you want to understand where that idea works well, and where it gets more complicated, see [Yield-Bearing Stablecoins](/core-concepts/yield-bearing-stablecoins).
 
-## Why The Comparison To x402 Still Matters
+## Why The x402 Comparison Still Matters
 
 Agon often compares itself to an exact-payment x402-style baseline because that is the cleanest way to show the difference in transaction count.
 
-The point of that comparison is not that x402 is "bad." It is that exact settlement per request creates a constant-cost floor. Agon is designed for the cases where that floor is too high relative to the value of each interaction.
+The point of that comparison is not that x402 is bad. It is that exact settlement per request creates a constant-cost floor. Agon is designed for the cases where that floor is too high relative to the value of each interaction.
+
+## Common Use Cases
+
+This tradeoff matters most when:
+
+- the same payer makes many small requests to the same provider
+- the service can tolerate delayed settlement
+- the cost of settlement is large relative to each individual request
