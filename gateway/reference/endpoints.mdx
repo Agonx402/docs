@@ -41,24 +41,6 @@ This page documents every route exposed by the deployed gateway. Paid Solana rou
   Batch lookup cached market snapshots for Solana mints. Access mode `siwx`. `mints` + `addresses` combined must contain 1–250 ids.
 </ResponseField>
 
-## Internal endpoints (server-to-server only)
-
-These routes are not part of the public surface. They are gated by the `x-agon-internal-secret` header and do not appear in `GET /v1/catalog`.
-
-<ResponseField name="GET /api/internal/facilitator/supported" type="internal">
-  Returns supported settlement networks and schemes of the internal facilitator signer.
-</ResponseField>
-
-<ResponseField name="POST /api/internal/facilitator/verify" type="internal">
-  Verifies an x402 payment payload without submitting it on-chain.
-</ResponseField>
-
-<ResponseField name="POST /api/internal/facilitator/settle" type="internal">
-  Submits a previously verified x402 payment on-chain using the internal facilitator wallet.
-</ResponseField>
-
-See [Facilitator](/gateway/facilitator) for when to enable these and how to secure them.
-
 ## CORS and OPTIONS
 
 Every public route supports `OPTIONS` preflight with `Access-Control-Allow-Origin: *` and the following headers:
@@ -71,7 +53,7 @@ Every public route supports `OPTIONS` preflight with `Access-Control-Allow-Origi
 
 ## Discovery
 
-CDP's Bazaar crawler is supported. Paid routes return `402 Payment Required` even for empty-body probes, so the crawler can inspect schemas and prices without triggering settlement.
+x402 discovery crawlers are supported. Paid routes return `402 Payment Required` even for empty-body probes, so crawlers can inspect schemas and prices without triggering settlement.
 
 ## See also
 

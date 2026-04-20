@@ -1,107 +1,90 @@
 ---
 title: "How it works"
-description: "End-to-end architecture of the Agon Gateway: x402 exact, SIWX, and upstream fan-out."
+description: "What happens when you call the Agon Gateway — from the client's point of view."
 ---
 
-The gateway is a Next.js app-router service that sits between clients and two kinds of upstreams:
+The gateway sits between your client and two kinds of upstreams:
 
-- **Paid Solana RPC and DAS** routes — Alchemy and Helius, gated with standard x402 `exact` on Solana mainnet.
-- **Auth-only Tokens API** routes — proxied with a server-side API key and gated with x402 SIWX.
+- **Paid Solana RPC and DAS** routes from Alchemy and Helius, priced per call in USDC.
+- **Wallet-authenticated Tokens API** routes, where the gateway holds the upstream key and you authenticate with your Solana wallet.
 
-Clients talk x402 over plain HTTP. The gateway resolves the route, enforces rate limiting and input guardrails, verifies payment or the wallet signature, calls the upstream, and returns the result.
+Everything speaks standard [x402](https://x402.org) over plain HTTP. If your client library already supports x402, there is nothing new to learn.
 
-## High-level flow
+## The shape of a call
 
 ```
-┌────────┐   x402 request    ┌───────────────────┐   upstream call   ┌────────────┐
-│ Client │ ────────────────▶ │   Agon Gateway    │ ────────────────▶ │  Upstream  │
-└────────┘ ◀──────────────── │  (Next.js on      │ ◀──────────────── │  provider  │
-      ▲      JSON response   │   Vercel)         │   JSON response   └────────────┘
-      │                      └────────┬──────────┘
-      │                               │ verify / settle
+┌────────┐   x402 request    ┌────────────────┐   upstream call   ┌────────────┐
+│ Client │ ────────────────▶ │  Agon Gateway  │ ────────────────▶ │  Provider  │
+└────────┘ ◀──────────────── │                │ ◀──────────────── └────────────┘
+      ▲      JSON response   │                │   JSON response
+      │                      └────────┬───────┘
+      │ confirmed on-chain            │ verify / settle
       │                               ▼
-      │                    ┌───────────────────┐
-      │                    │  CDP facilitator  │ ← paid routes only
-      │                    └───────────────────┘
-      │                               │
-      │                               ▼
-      │                    ┌───────────────────┐
-      └─── confirmed ──────│     Solana L1     │
-                           └───────────────────┘
+      │                      ┌────────────────┐
+      └──────────────────────│   Solana L1    │  paid routes only
+                             └────────────────┘
 ```
 
-Replay protection, rate limiting, and usage counters live in Upstash Redis so the service stays stateless between Vercel regions.
+On every request the gateway:
 
-## Paid route lifecycle (x402 `exact`)
+1. Resolves which route you are calling.
+2. Validates your input before touching anything upstream.
+3. Asks for payment (paid routes) or a wallet signature (Tokens API) if you did not include one.
+4. Calls the upstream provider.
+5. Settles the payment **only after** the upstream responds successfully.
+6. Returns the upstream JSON to you, along with a proof of settlement where applicable.
 
-Paid Solana RPC / DAS routes use the standard x402 `exact` payment flow:
+## Paid routes — pay per call in USDC
 
-1. **Client** sends the request (e.g. `POST /v1/x402/solana/mainnet/alchemy/rpc/getBalance`).
-2. **Gateway** returns `402 Payment Required` with an `x402` envelope describing:
+Paid Solana RPC and DAS routes use the standard x402 `exact` payment flow:
+
+1. **Client** sends the request (for example, `POST /v1/x402/solana/mainnet/alchemy/rpc/getBalance`).
+2. **Gateway** returns `402 Payment Required` with an envelope describing:
    - `scheme: "exact"`
    - `network: solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`
    - `asset: USDC`
-   - `maxAmountRequired` derived from upstream PAYG pricing
-   - `payTo`: the gateway's settlement wallet
-   - `facilitator.url`: CDP facilitator endpoint
-3. **Client** builds and signs an SVM exact transfer for that amount, encodes it into `PAYMENT-SIGNATURE`, and retries the same request.
-4. **Gateway** verifies the signature against the CDP facilitator's `/verify` endpoint.
-5. **Gateway** calls the upstream provider (Alchemy or Helius) with the real request payload.
-6. **Gateway** only settles the payment through CDP's `/settle` endpoint **after** a successful upstream response. A failed upstream means no settlement — the payment authorization is discarded.
-7. **Gateway** returns the upstream JSON response plus the settlement transaction in `X-PAYMENT-RESPONSE`.
+   - `maxAmountRequired` — the price in micro-USDC
+   - `payTo` — the gateway's settlement wallet
+3. **Client** signs a Solana USDC transfer for that amount, encodes it into `PAYMENT-SIGNATURE`, and retries the request.
+4. **Gateway** verifies the signed transfer.
+5. **Gateway** calls the upstream provider with the real request payload.
+6. **Gateway** submits the payment on-chain **only after** a successful upstream response.
+7. **Gateway** returns the upstream JSON plus the Solana settlement transaction in `X-PAYMENT-RESPONSE`.
 
-This "verify before, settle after success" ordering is deliberate. Clients are never charged for upstream errors, and the CDP facilitator remains the canonical settlement authority.
+This "verify first, settle on success" ordering is deliberate: clients are never charged for upstream errors.
 
-## Auth-only route lifecycle (x402 SIWX)
+## Tokens API — sign in with your wallet
 
-Tokens API routes use the **sign-in-with-x** extension of x402:
+Tokens API routes use the **sign-in-with-x** extension of x402. No USDC is transferred; you prove ownership of a wallet and the gateway calls the Tokens API on your behalf.
 
-1. **Client** sends the request (e.g. `GET /v1/x402/tokens/health`).
-2. **Gateway** returns `402 Payment Required` with a `sign-in-with-x` extension declaring:
+1. **Client** sends the request (for example, `GET /v1/x402/tokens/health`).
+2. **Gateway** returns `402 Payment Required` with a `sign-in-with-x` challenge declaring:
    - acceptable `network`s (Solana mainnet and devnet)
    - a sign-in `statement`
    - an `expirationSeconds` window (300 seconds)
-3. **Client** constructs and signs a SIWX message with their wallet, encodes it into `SIGN-IN-WITH-X`, and retries the request.
-4. **Gateway** verifies the signature, enforces expiration, and records a short-lived session key to defend against replay.
-5. **Gateway** calls the Tokens API with its server-side `x-api-key` and returns the response.
+3. **Client** signs a SIWX message with their wallet, encodes it into `SIGN-IN-WITH-X`, and retries.
+4. **Gateway** verifies the signature and expiration.
+5. **Gateway** calls the Tokens API with its server-side credential and returns the response.
 
-No on-chain transaction is created for SIWX routes. The wallet signature is the authorization primitive.
+No on-chain transaction is created. The wallet signature is the authorization.
 
 See [Access modes](/gateway/access-modes) for a side-by-side comparison.
 
-## Bazaar discovery
-
-The gateway supports CDP's Bazaar crawler for x402 discovery:
-
-- Paid routes advertise their input and output schemas, pricing, and asset in the `402 Payment Required` envelope.
-- The Bazaar crawler probes routes with an empty request body. Paid routes must still return `402 Payment Required` for that probe, so body validation happens **after** the initial challenge is issued.
-- `GET /v1/catalog` returns the same catalog data clients can render directly without hitting each endpoint.
-
-## Upstreams
+## Upstream providers
 
 | Provider | Clusters | Surfaces | Notes |
 | --- | --- | --- | --- |
-| Alchemy | `mainnet`, `devnet` | `rpc`, `das` (mainnet only) | Compute-unit PAYG pricing |
-| Helius | `mainnet`, `devnet` | `rpc`, `das` | Per-credit PAYG pricing |
-| TokensAPI | n/a | `tokens` | Server-side API key, SIWX auth for clients |
+| Alchemy | `mainnet`, `devnet` | `rpc`, `das` (mainnet only) | Pay-as-you-go compute-unit pricing |
+| Helius | `mainnet`, `devnet` | `rpc`, `das` | Pay-as-you-go per-credit pricing |
+| Tokens API | n/a | `tokens` | Wallet sign-in (SIWX) instead of per-call pricing |
 
-Provider URLs and credentials are configured via environment variables — see [Deploy](/gateway/deploy).
+## Discovery
 
-## State and observability
+- Every route advertises its price, access mode, and input/output schemas in its `402` challenge.
+- `GET /v1/catalog` returns the full route list in a single response — ideal for agents and tooling that need to enumerate what is available without probing each endpoint.
+- Paid routes are crawlable by x402 discovery services because they always return `402` on an unpaid probe, never leaking upstream data.
 
-Stateful concerns are intentionally pushed to Upstash Redis so Vercel stays stateless:
-
-- **Replay protection** — paid payment authorizations and SIWX sessions are cached and reject reuse.
-- **Rate limiting** — per-route limits keyed by IP (unpaid challenges) or wallet (authenticated calls).
-- **Usage counters** — simple hit counters for paid, unpaid, and failed flows.
-
-Structured event logs are emitted to `stdout` and collected by Vercel. See [Rate limiting & guardrails](/gateway/rate-limiting) for the limits table.
-
-## Internal facilitator
-
-The gateway also ships a thin self-hosted facilitator at `/api/internal/facilitator/{supported,verify,settle}`. These routes are **server-to-server only**, gated by a shared secret, and exist to let a trusted caller fall back to the gateway's own facilitator signer instead of CDP. They are not part of the public surface and are not advertised in discovery.
-
-See [Facilitator](/gateway/facilitator) for details.
+See [Route catalog](/gateway/catalog) for the exact shape of the discovery response.
 
 ## See also
 
@@ -109,3 +92,4 @@ See [Facilitator](/gateway/facilitator) for details.
 - [Pricing](/gateway/pricing)
 - [Route catalog](/gateway/catalog)
 - [Rate limiting & guardrails](/gateway/rate-limiting)
+- [Settlement](/gateway/facilitator)

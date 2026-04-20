@@ -1,30 +1,28 @@
 ---
 title: "Rate Limiting & Guardrails"
-description: "Limits, request guardrails, and replay protection applied by the gateway."
+description: "What the gateway accepts, what it rejects, and how it tells you."
 ---
 
-The gateway enforces three layers of protection on every request:
+The gateway is designed so clients never waste money on a call that was going to be rejected anyway. Three layers of protection run on every request:
 
-1. **Rate limiting** — per-route or per-surface caps on how often a client can call.
-2. **Request guardrails** — strict input validation on every route before any upstream call or settlement.
-3. **Replay protection** — rejects reused payment authorizations and SIWX sessions.
+1. **Rate limits** — per-route caps on how often a given client can call.
+2. **Input guardrails** — strict validation on request bodies and query parameters before any upstream call or settlement.
+3. **Replay protection** — each payment authorization and each wallet sign-in can only be used once.
 
-All three are backed by Upstash Redis so the service stays correct across Vercel regions.
+Everything here is client-observable. You never hit a 402 for payment and then discover afterwards that the request was malformed.
 
 ## Rate limits
 
-Limits applied on the live deployment:
+Current limits on the live deployment:
 
 | Scope | Limit | Keyed by |
 | --- | --- | --- |
 | Unpaid `402` challenges | `120 / min` | Client IP |
 | Solana RPC routes | `50 rps` | Per `provider:cluster:surface` scope |
 | Solana DAS routes | `10 rps` | Per `provider:cluster:surface` scope |
-| Tokens API routes | `30 rpm` | Across the shared upstream API key (configurable) |
+| Tokens API routes | `30 rpm` | Across the shared upstream credential |
 
-Each limit is configurable via environment variables — see [Deploy](/gateway/deploy).
-
-Clients that hit a limit receive `429 Too Many Requests` with JSON:
+When you hit a limit you get `429 Too Many Requests`:
 
 ```json
 {
@@ -34,9 +32,11 @@ Clients that hit a limit receive `429 Too Many Requests` with JSON:
 }
 ```
 
-## Request guardrails
+Back off for `retryAfterMs` milliseconds and retry.
 
-The gateway rejects overly broad or malformed requests **before** settlement or any upstream call. Key guardrails:
+## Input guardrails
+
+The gateway rejects overly broad or malformed requests **before** settlement or any upstream call. A rejected request returns `400 Bad Request` with a structured error body and no funds move.
 
 ### Solana RPC
 
@@ -64,39 +64,22 @@ The gateway rejects overly broad or malformed requests **before** settlement or 
 - OHLCV routes — `interval` must be one of `1m, 5m, 15m, 1H, 4H, 1D, 1W`; `from <= to`.
 - Asset-level paths — `assetId` path param must be non-empty.
 
-Any violation returns `400 Bad Request` with a structured error body and **does not trigger settlement**.
-
 ## Replay protection
 
-### x402 `exact` payments
+### Paid payments
 
-Every paid payment authorization is hashed and stored in Redis. Submitting the same `PAYMENT-SIGNATURE` twice returns `400` with an error — the second call cannot be settled again. This is enforced before the upstream call.
+Every `PAYMENT-SIGNATURE` can only be used once. Submitting the same payment header twice returns `400` — the second call is not settled. This check runs before the upstream call, so no duplicate charge can ever occur.
 
 ### SIWX sessions
 
-Each SIWX signature is stored with a short TTL. A given signature cannot authorize two different requests. The TTL is tied to `expirationSeconds: 300` in the challenge envelope, so a SIWX signature is only valid within five minutes of being signed.
+Each SIWX signature can authorize exactly one request, and only within the 300-second expiry window declared in the challenge envelope. Past that window (or on a second use), the request is rejected.
 
-## Bazaar discovery behavior
+## Discovery-friendly `402`
 
-The CDP Bazaar crawler probes routes with an empty request body to discover schemas. To keep paid routes discoverable, **body validation happens after** the initial challenge is issued for empty unpaid probes. Paid paths still return `402 Payment Required` on a bare probe — they never leak upstream data without payment.
-
-Once a paid request carries a `PAYMENT-SIGNATURE`, strict input validation runs before settlement.
-
-## Structured event logs
-
-Every incoming request emits a structured event to stdout (collected by Vercel logs). Event fields include:
-
-- `event` — e.g. `paid_request_ok`, `paid_request_upstream_error`, `siwx_request_ok`.
-- `requestId`
-- `routePath`, `cluster`, `provider`, `surface`, `method`
-- `wallet` (when authenticated)
-- `paymentNetwork`, `paymentAsset`, `priceUsd`
-- `httpStatus`, `upstreamLatencyMs`
-
-Operators can stream logs into their preferred observability stack without any additional instrumentation.
+x402 discovery crawlers probe routes with an empty body to read the route's schema and price. The gateway returns `402 Payment Required` on those probes — **not** `400` — so discovery works without sending any payment or wallet signature. Paid routes never leak upstream data on an unpaid probe. Full body validation runs once your request carries a payment or sign-in header.
 
 ## See also
 
-- [Deploy](/gateway/deploy)
 - [Access modes](/gateway/access-modes)
 - [Payment headers reference](/gateway/reference/payment-headers)
+- [Route catalog](/gateway/catalog)

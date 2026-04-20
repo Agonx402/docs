@@ -138,10 +138,9 @@
             ]
           },
           {
-            "group": "Clients & Operators",
+            "group": "Integrate",
             "pages": [
               "gateway/integration-guide",
-              "gateway/deploy",
               "gateway/facilitator"
             ]
           },

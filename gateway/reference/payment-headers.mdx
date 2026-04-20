@@ -14,7 +14,7 @@ Used by **paid routes** (`accessMode: "exact"`).
 - Base64-encoded x402 exact payment payload.
 - Must match the `maxAmountRequired`, `network`, and `payTo` fields from the route's `402 Payment Required` challenge envelope.
 - The gateway accepts either `PAYMENT-SIGNATURE` or `X-PAYMENT`.
-- Reusing the same header for a second request returns `400` — replay protection is enforced in Redis.
+- Each payment can authorize exactly one call; reusing the same header returns `400`.
 
 ### `SIGN-IN-WITH-X`
 
@@ -29,10 +29,6 @@ Used by **auth-only routes** (`accessMode: "siwx"`).
 
 - `application/json` for any request with a body.
 - Required for paid Solana routes. Rejected with `415` for any other content type on body routes.
-
-### `x-agon-internal-secret`
-
-Used only by **internal facilitator routes** (`/api/internal/facilitator/...`). Absent or incorrect value returns `401`.
 
 ## Response headers
 
@@ -69,7 +65,6 @@ Full CORS preflight is supported. See [Endpoints](/gateway/reference/endpoints#c
 | `200 OK` | Successful upstream response. | `{ ok: true, ..., result: {...} }` |
 | `204 No Content` | Preflight `OPTIONS` response. | empty |
 | `400 Bad Request` | Input failed validation, reused payment, or invalid provider filter. | `{ ok: false, error, ... }` |
-| `401 Unauthorized` | Missing or wrong `x-agon-internal-secret` on an internal facilitator route. | `{ ok: false, error: "unauthorized" }` |
 | `402 Payment Required` | x402 `exact` or SIWX challenge. Retry with the matching header. | `{ x402Version: 2, accepts: [...] }` |
 | `404 Not Found` | Unknown route path. | `{ ok: false, error: "not_found" }` |
 | `405 Method Not Allowed` | Wrong HTTP method for the route. | `{ ok: false, error: "method_not_allowed" }` |
@@ -97,7 +92,7 @@ Full CORS preflight is supported. See [Endpoints](/gateway/reference/endpoints#c
       "mimeType": "application/json",
       "payTo": "<address>",                        // exact only
       "asset": { "address": "...", "symbol": "USDC", "decimals": 6 },
-      "facilitator": { "url": "<cdp facilitator url>" },
+      "facilitator": { "url": "<facilitator url>" },
       "extensions": { /* discovery + siwx */ }
     }
   ]
