@@ -1,16 +1,17 @@
 ---
 title: "Access Modes"
-description: "Paid x402 exact routes vs. wallet-authenticated SIWX routes."
+description: "x402 exact, wallet-authenticated SIWX, and Agon channel routes."
 ---
 
-Every gateway route uses one of two x402 access modes. The catalog reports the mode on each route as `accessMode`.
+Every gateway route reports its authorization mode as `accessMode` in the catalog.
 
 | Access mode | Header | Settles on-chain? | Used for |
 | --- | --- | --- | --- |
 | `exact` | `PAYMENT-SIGNATURE` (aka `X-PAYMENT`) | Yes — USDC on Solana mainnet | Paid Solana RPC and DAS routes |
 | `siwx` | `SIGN-IN-WITH-X` | No | Tokens API routes |
+| `agon-channel` | `X-Agon-Request-Id` + `AGON-COMMITMENT` | Settled later through Agon Protocol | Channel-backed Solana RPC, DAS, and Helius Wallet routes |
 
-Both modes use the same x402 request-challenge-retry pattern. The difference is what satisfies the challenge.
+The `exact` and `siwx` modes use the x402 request-challenge-retry pattern. The `agon-channel` mode uses an already-open Agon payment channel and a signed cumulative commitment per request.
 
 ## `exact` — pay-per-call with USDC
 
@@ -55,6 +56,25 @@ The client builds an SVM `exact` transfer for `maxAmountRequired` to `payTo` and
 
 If the upstream fails, settlement is skipped. No funds move.
 
+## `agon-channel` - channel-backed gateway calls
+
+Used by `/v1/agon-channel/...` routes. The agent opens a channel to the gateway merchant participant, locks official devnet USDC, and sends a signed cumulative commitment with each request.
+
+Required request headers:
+
+- `X-Agon-Request-Id`: stable idempotency key for the request.
+- `AGON-COMMITMENT`: base64 JSON envelope containing the signed `agon-cmt-v5` cumulative commitment payload.
+
+The gateway verifies that the commitment targets the gateway merchant, live devnet program, correct cluster, correct message domain, and official devnet USDC token. It then checks channel headroom as:
+
+```text
+effectiveLocked = max(0, lockedBalance - pendingUnlockAmount)
+maxAuthorized = settledCumulative + effectiveLocked
+remainingHeadroom = max(0, maxAuthorized - latestAcceptedCommitted)
+```
+
+The gateway settles accepted commitments with `settleCommitmentBundle`, not BLS. Tokens SIWX routes remain free/auth-only and do not enter channel authorization.
+
 ## `siwx` — wallet authentication without payment
 
 Used by every `/v1/x402/tokens/...` route. The gateway holds the Tokens API key server-side; clients never see it. Instead, they prove ownership of a Solana wallet and the gateway calls the Tokens API on their behalf.
@@ -89,14 +109,15 @@ The client constructs a SIWX message, signs it with their Solana wallet, base64-
 
 No USDC transfer is created. No `X-PAYMENT-RESPONSE` header is returned.
 
-## Why two modes
+## Why these modes
 
-The two modes solve different problems the gateway needs to bridge:
+The modes solve different problems the gateway needs to bridge:
 
 - **Paid Solana RPC/DAS** comes from providers that already have a well-defined PAYG cost per request, and clients want per-call payment without managing a provider-specific API key. `exact` x402 is the natural match.
 - **Tokens API** is priced at the account level, not per request, and needs a trusted origin to hold the shared API key. Asking clients to pay per request would misrepresent the upstream cost. SIWX gives clients wallet-level identity without pretending each call has an independent on-chain price.
+- **Payment-channel gateway calls** are best for agents that repeatedly call RPC, DAS, or wallet routes and want to amortize settlement with Agon Protocol instead of paying an on-chain transfer per request.
 
-Both flows use standard x402 extensions, so any x402-compatible client library (including `@x402/fetch`) supports them out of the box.
+The x402 flows use standard x402 extensions, so any x402-compatible client library (including `@x402/fetch`) supports them out of the box. Channel-backed calls use Agon-specific protocol tooling; see [Agentic tools](/reference/agentic-tools).
 
 ## See also
 

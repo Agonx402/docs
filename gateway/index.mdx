@@ -1,19 +1,20 @@
 ---
 title: "Agon Gateway"
-description: "A hosted x402 gateway for paid Solana RPC/DAS and wallet-authenticated Tokens API routes."
+description: "A hosted gateway for x402, SIWX, and Agon channel-backed Solana infrastructure routes."
 ---
 
-Agon Gateway is a hosted [x402](https://x402.org) gateway that turns major Solana infrastructure providers and the Tokens API into permissionless, pay-per-call HTTP endpoints. Clients do not need upstream API keys — they authenticate and settle directly with a Solana wallet.
+Agon Gateway is a hosted gateway that turns major Solana infrastructure providers and the Tokens API into permissionless HTTP endpoints. Clients do not need upstream API keys; they authenticate and pay through x402, SIWX, or Agon Protocol payment channels.
 
 What you get:
 
-- **Pay per call with a wallet.** Paid Solana RPC and DAS endpoints that you call with USDC on Solana mainnet. No subscriptions, no API keys, no vendor lock-in.
+- **Pay per call with a wallet.** x402 Solana RPC and DAS endpoints that you call with USDC on Solana mainnet. No subscriptions, no API keys, no vendor lock-in.
+- **Use payment channels for agents.** `/v1/agon-channel/...` routes accept signed cumulative commitments against locked official devnet USDC collateral.
 - **Sign in with your wallet for free metadata.** The Tokens API is exposed over wallet sign-in (SIWX). You prove ownership of a wallet; the gateway calls the Tokens API for you.
-- **Transparent pricing.** Every paid route advertises its exact USDC price up front — upstream PAYG price plus a fixed `$0.0006` settlement surcharge per paid call.
+- **Transparent pricing.** x402 paid routes advertise `priceUsd`; channel routes advertise `priceTokenAmount` in official devnet USDC.
 - **Pay only on success.** If the upstream provider fails, the gateway does not settle the payment. You are never charged for an upstream error.
 - **Two providers, one surface.** Alchemy and Helius sit behind a common route shape, so you can switch providers or compare latency without changing client code.
-- **Non-custodial.** The gateway never holds your funds. Payments settle directly on Solana through a standard x402 facilitator.
-- **Standard x402.** Anything that speaks x402 — `@x402/fetch`, x402 SDKs, agent frameworks — works against the gateway out of the box.
+- **Non-custodial.** The gateway never holds your funds. x402 payments settle directly on Solana; channel collateral stays inside Agon Protocol.
+- **Standard x402 where appropriate.** Anything that speaks x402 works against the x402 routes. Channel routes use Agon-specific tooling.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/gateway/quickstart">
@@ -46,16 +47,17 @@ If you want to understand the underlying settlement protocol — **Agon Protocol
 | Field | Value |
 | --- | --- |
 | Base URL | `https://gateway.agonx402.com` |
-| Payment network | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (Solana mainnet) |
-| Payment asset | `USDC` (`EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`) |
+| x402 payment network | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (Solana mainnet) |
+| x402 payment asset | `USDC` (`EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`) |
+| Agon channel token | Official devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`) |
 | Catalog | `GET /v1/catalog` |
 | Health | `GET /healthz` |
 
 ## What it is not
 
-- **Not a custodian.** The gateway never holds client funds. Payments settle directly on Solana.
-- **Not a protocol.** The gateway is a standard x402 resource server. It composes with any x402 client.
-- **Not a token.** There is no gateway token. Every request settles in USDC on Solana mainnet.
+- **Not a custodian.** The gateway never holds client funds. x402 payments settle directly on Solana; channel collateral remains in Agon Protocol accounts.
+- **Not the protocol itself.** The gateway is an application-layer resource server that can use x402 or Agon Protocol channels.
+- **Not a token.** There is no gateway token. Payments use USDC, either on Solana mainnet for x402 or official devnet USDC for channel testing.
 
 ## See also
 

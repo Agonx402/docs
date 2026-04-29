@@ -24,7 +24,7 @@ A response includes the full route list plus provider categories:
   "ok": true,
   "version": 1,
   "payment": {
-    "modes": ["exact", "siwx"],
+    "modes": ["exact", "siwx", "agon-channel"],
     "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
     "pricingModel": "mixed",
     "asset": {
@@ -76,9 +76,12 @@ Each item in `routes[]` is a `CatalogRouteEntry`:
 | `surface` | `"rpc" \| "das" \| "wallet" \| "tokens"` | Logical surface. `wallet` is the Helius Wallet API. |
 | `method` | `string` | Canonical method name (`getBalance`, `search`, …). |
 | `description` | `string` | Human-readable route description. |
-| `accessMode` | `"exact" \| "siwx"` | Payment vs. auth-only. See [Access modes](/gateway/access-modes). |
+| `accessMode` | `"exact" \| "siwx" \| "agon-channel"` | x402 payment, wallet auth, or Agon channel authorization. See [Access modes](/gateway/access-modes). |
 | `paymentRequired` | `boolean` | `true` for paid routes, `false` for SIWX. |
-| `priceUsd` | `string` (optional) | Decimal USD price, present for paid routes. |
+| `priceUsd` | `string` (optional) | Decimal USD price, present for x402 `exact` paid routes. |
+| `priceTokenAmount` | `string` (optional) | Six-decimal official devnet USDC amount, present for `agon-channel` routes. |
+| `tokenMint` | `string` (optional) | Official devnet USDC mint for `agon-channel` routes. |
+| `tokenId` | `number` (optional) | Protocol token ID for `agon-channel` routes, resolved from the live registry/config. |
 | `authNetworks` | `string[]` (optional) | SIWX networks, present for SIWX routes. |
 | `paymentNetwork` | `string` (optional) | CAIP-2 of the settlement network (paid routes only). |
 | `paymentAsset` | `{ symbol, mint, decimals }` (optional) | Asset descriptor (paid routes only). |
@@ -106,8 +109,9 @@ Typical client flow:
 1. Fetch `GET /v1/catalog` once on startup (or per reload).
 2. Render routes grouped by `categories.providers`.
 3. For each user action, look up the matching `CatalogRouteEntry`, build the request according to `inputSchema`, and fire it.
-4. If `paymentRequired: true`, let your x402 client library handle the `exact` flow using the price from the `402` challenge.
-5. If `paymentRequired: false` and `accessMode: "siwx"`, let your client handle SIWX using the `authNetworks` from the `402` challenge.
+4. If `accessMode: "exact"`, let your x402 client library handle payment using the price from the `402` challenge.
+5. If `accessMode: "agon-channel"`, send `X-Agon-Request-Id` and `AGON-COMMITMENT` with the next cumulative channel amount.
+6. If `accessMode: "siwx"`, let your client handle SIWX using the `authNetworks` from the `402` challenge.
 
 See the [Integration guide](/gateway/integration-guide) for a worked TypeScript example.
 

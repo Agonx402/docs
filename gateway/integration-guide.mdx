@@ -3,7 +3,7 @@ title: "Integration Guide"
 description: "Integrate the Agon Gateway into your own client or service."
 ---
 
-The gateway is a standard x402 resource server. Any x402-compatible client library works against it. This page shows the most common integration path: TypeScript/Node, using the official `@x402` packages.
+For x402 routes, the gateway behaves like a standard x402 resource server. Any x402-compatible client library works against those routes. This page shows the most common integration path: TypeScript/Node, using the official `@x402` packages.
 
 ## Install
 
@@ -114,7 +114,7 @@ For agent-style clients that need to enumerate available routes:
 const catalog = await fetch("https://gateway.agonx402.com/v1/catalog").then((r) => r.json());
 
 for (const route of catalog.routes) {
-  console.log(route.httpMethod, route.path, route.accessMode, route.priceUsd ?? "");
+  console.log(route.httpMethod, route.path, route.accessMode, route.priceUsd ?? route.priceTokenAmount ?? "");
 }
 ```
 
@@ -164,8 +164,9 @@ Best fit: autonomous agents that reason about which route to call and should pay
 - Fetch `GET /v1/catalog` at startup.
 - Pass the route descriptors into the agent's tool schema.
 - Use `gatewayFetch` to invoke selected routes.
+- For packaged skills, CLI, MCP servers, and LLM-readable docs, see [Agentic tools](/reference/agentic-tools).
 
-Because every paid route advertises `priceUsd` and every SIWX route advertises `accessMode: "siwx"`, agents can budget and choose between paid and unpaid calls deterministically.
+Because x402 paid routes advertise `priceUsd`, channel routes advertise `priceTokenAmount`, and SIWX routes advertise `accessMode: "siwx"`, agents can budget and choose between paid and unpaid calls deterministically.
 
 ## Error handling
 

@@ -3,9 +3,9 @@ title: "Pricing"
 description: "How paid routes are priced and how Tokens API auth-only routes fit in."
 ---
 
-Paid routes are priced from each upstream provider's public PAYG schedule **plus a flat gateway settlement surcharge of `$0.0006` per paid call**. This surcharge covers the Solana transaction cost required to settle each exact-payment request.
+Paid x402 routes are priced from each upstream provider's public PAYG schedule **plus a flat gateway settlement surcharge of `$0.0006` per paid call**. This surcharge covers the Solana transaction cost required to settle each exact-payment request.
 
-All paid routes settle in **USDC on Solana mainnet**.
+x402 paid routes settle in **USDC on Solana mainnet**. Agon channel routes are denominated in official **devnet USDC token amounts** and settle later through Agon Protocol bundle settlement.
 
 ## Alchemy — Compute Unit pricing
 
@@ -91,7 +91,7 @@ Per-call USDC price:
 price_usd = ( ceil( (credits × 5_000_000) / 1_000_000 ) + 600 ) / 1_000_000
 ```
 
-Again, `600` micro-USDC is the fixed surcharge applied to every paid route.
+Again, `600` micro-USDC is the fixed surcharge applied to every x402 paid route.
 
 ## Tokens API — no per-call price
 
@@ -101,14 +101,32 @@ Tokens API routes still sit behind the x402 challenge/response flow — the clie
 
 See [Access modes](/gateway/access-modes) for the mechanics.
 
+## Agon channel pricing
+
+For `/v1/agon-channel/...` routes, the catalog publishes token-denominated pricing:
+
+| Field | Value |
+| --- | --- |
+| `accessMode` | `agon-channel` |
+| `priceTokenAmount` | Six-decimal official devnet USDC amount |
+| `tokenSymbol` | `USDC` |
+| `tokenDecimals` | `6` |
+| `tokenMint` | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
+
+V1 channel prices are derived 1:1 from the existing USD schedule into nominal devnet USDC amounts, then compared as integer six-decimal token amounts.
+
+Tokens API routes remain SIWX/auth-only and do not use payment channels.
+
 ## How prices are advertised
 
-Every paid route advertises its price in two places:
+Every x402 paid route advertises its price in two places:
 
 1. In the route's `402 Payment Required` envelope as `maxAmountRequired`, expressed in micro-USDC.
 2. In the catalog entry as `priceUsd`, expressed as a decimal string.
 
 Clients that use `@x402/fetch` or any x402 library will pick up the price automatically from the challenge envelope — there is no need to hard-code prices.
+
+Channel-backed routes advertise `priceTokenAmount` in the catalog and require the client to increment its signed cumulative commitment by exactly that amount.
 
 ## See also
 

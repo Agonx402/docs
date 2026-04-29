@@ -52,7 +52,7 @@ const participant = await client.fetchParticipant(owner);
 console.log("Participant ID:", participant.participantId);
 ```
 
-By default, `AgonClient` uses the live program ID baked into the IDL (`Ba2puU8D2CLD1dYfRQ4YBXxirdyz3zVLLChvMf9AqJ1Y` on devnet). To target a different deployment, pass a `programId` override:
+By default, `AgonClient` uses the live program ID baked into the IDL (`3UyUFeNsUYPpM6hMRf7H8wg3MKEXQ82rqnsXhZrUwgSD` on devnet). To target a different deployment, pass a `programId` override:
 
 ```ts
 import { PublicKey } from "@solana/web3.js";
@@ -112,7 +112,7 @@ Two things are worth noting:
 
 ## Versioning
 
-The SDK is on the `0.1.x` line while the protocol surface stabilises. Breaking changes are signalled in the npm [changelog](https://github.com/Agonx402/agon-protocol-sdk/releases) and tracked against the program's IDL. The package ships the generated IDL and TypeScript program type, so upgrading the SDK is always aligned with a protocol upgrade.
+The SDK is on the `0.2.x` line while the protocol surface stabilises. Breaking changes are signalled in the npm [changelog](https://github.com/Agonx402/agon-protocol-sdk/releases) and tracked against the program's IDL. The package ships the generated IDL and TypeScript program type, so upgrading the SDK is always aligned with a protocol upgrade.
 
 ## Where to go next
 
@@ -128,5 +128,8 @@ The SDK is on the `0.1.x` line while the protocol surface stabilises. Breaking c
   </Card>
   <Card title="Recipes" icon="book-open" href="/sdk/recipes">
     End-to-end flows: register, fund, sign, settle, withdraw.
+  </Card>
+  <Card title="Agentic tools" icon="robot" href="/reference/agentic-tools">
+    Protocol CLI, MCP, skills, and LLM text built on the SDK.
   </Card>
 </CardGroup>

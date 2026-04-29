@@ -99,6 +99,7 @@
             "group": "Reference",
             "pages": [
               "reference/deployment",
+              "reference/agentic-tools",
               "reference/instructions",
               "reference/messages",
               "reference/accounts",

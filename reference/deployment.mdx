@@ -9,9 +9,11 @@ The Agon protocol is currently live on Solana devnet. This page records the cano
 
 | Field | Value |
 | --- | --- |
-| Program ID | `Ba2puU8D2CLD1dYfRQ4YBXxirdyz3zVLLChvMf9AqJ1Y` |
+| Program ID | `3UyUFeNsUYPpM6hMRf7H8wg3MKEXQ82rqnsXhZrUwgSD` |
 | Cluster | `devnet` |
 | Chain ID | `1` |
+| Message domain | `a58a109a38f14cc27ef174135176cab3` |
+| Gateway-channel settlement token | Official devnet USDC, mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
 | Framework | Anchor |
 | Source | [github.com/Agonx402/agon-protocol](https://github.com/Agonx402/agon-protocol) |
 
@@ -28,17 +30,18 @@ Agon distinguishes deployments by a protocol-level chain ID stored in `GlobalCon
 
 Different chain IDs produce different message domains even when the program ID is identical. A commitment signed for one chain will never verify on another.
 
-## Timelocks
+## Live devnet timing
 
-Timelocks differ between mainnet and non-mainnet deployments:
+The current devnet deployment uses the production channel-unlock policy while keeping participant withdrawals instant:
 
-| Action | Mainnet | Devnet / Testnet / Localnet |
-| --- | --- | --- |
-| Withdrawal unlock | 7 days | 2 seconds |
-| Channel unlock | 7 days | 2 seconds |
-| Authorized signer rotation | 7 days | 2 seconds |
+| Action | Live devnet value |
+| --- | --- |
+| Participant withdrawal | Instant (`0` seconds) |
+| Unilateral channel unlock | `72` hours (`259200` seconds) |
+| Cooperative channel unlock | Immediate with both parties' consent |
+| Gateway-channel collateral token | Official devnet USDC; resolve the `token_id` from `TokenRegistry` or `AGON_PROTOCOL_DEVNET_USDC_TOKEN_ID` |
 
-Non-mainnet timelocks are intentionally short to make integration testing fast. Do not model production flows against devnet timelocks.
+Gateway-channel v1 uses locked channel collateral only. General participant balances remain withdrawable immediately, while channel collateral becomes spendable again through cooperative unlock or the 72-hour unilateral fallback.
 
 ## Fee parameters
 
@@ -65,6 +68,18 @@ Neither authority can:
 - upgrade which token an existing `token_id` maps to
 
 See [Trust model](/security/trust-model) for the full security posture and upgrade model.
+
+## Agentic surfaces
+
+Agents can discover the live deployment and prepare protocol actions through the published agentic tooling:
+
+| Surface | Package or path | Scope |
+| --- | --- | --- |
+| Protocol CLI | `@agonx402/protocol-cli` | Read protocol state and prepare unsigned transactions/messages |
+| Protocol MCP | `@agonx402/protocol-mcp` | Mirrored read/prepare tools plus `agon://protocol/llm.txt` |
+| Skills repo | [github.com/Agonx402/agon-gateway-agentic](https://github.com/Agonx402/agon-gateway-agentic) | Gateway and protocol skills for agent runtimes |
+
+See [Agentic tools](/reference/agentic-tools) for package names, skills, LLM text, and the channel-payment guardrails.
 
 ## Message domain
 

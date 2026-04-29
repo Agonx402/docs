@@ -116,12 +116,13 @@ await client
 Register a settlement token in `TokenRegistry`. Restricted to the registry authority.
 
 ```ts
+// Pick or resolve the protocol token ID before registering the mint.
 await client
   .registerToken({
     authority,
     mint,
-    tokenId: 2,
-    symbol: "aUSDC",
+    tokenId: usdcTokenId,
+    symbol: "USDC",
   })
   .rpc();
 ```
@@ -175,7 +176,7 @@ await client
     owner: payer.publicKey,
     ownerTokenAccount,
     tokenId: 2,
-    amount: 10_000_000n, // 10 aUSDC
+    amount: 10_000_000n, // 10 USDC with 6 decimals
   })
   .signers([payer])
   .rpc();

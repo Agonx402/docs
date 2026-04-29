@@ -6,7 +6,7 @@ description: "End-to-end flows with @agonx402/sdk — register, fund, sign, sett
 This page is the SDK-native version of [Your First Payment](/getting-started/first-payment). Everything is expressed in terms of [`@agonx402/sdk`](https://www.npmjs.com/package/@agonx402/sdk) helpers. If you want the low-level protocol walkthrough, start there.
 
 <Info>
-All examples target the live devnet deployment (program `Ba2puU8D2CLD1dYfRQ4YBXxirdyz3zVLLChvMf9AqJ1Y`, chain ID `1`). Replace the `programId` and `AGON_CHAIN_IDS.*` value for other environments.
+All examples target the live devnet deployment (program `3UyUFeNsUYPpM6hMRf7H8wg3MKEXQ82rqnsXhZrUwgSD`, chain ID `1`). Replace the `programId` and `AGON_CHAIN_IDS.*` value for other environments.
 </Info>
 
 ## Prerequisites
@@ -75,14 +75,15 @@ console.log({
 The payer moves tokens from their own SPL account into the protocol vault.
 
 ```ts
-const tokenId = 2; // aUSDC on devnet
+// Resolve this from TokenRegistry or AGON_PROTOCOL_DEVNET_USDC_TOKEN_ID.
+const tokenId = usdcTokenId; // resolved from TokenRegistry for official devnet USDC
 
 await client
   .deposit({
     owner: alice.publicKey,
-    ownerTokenAccount: aliceAUsdcAta,
+    ownerTokenAccount: aliceUsdcAta,
     tokenId,
-    amount: 10_000_000n, // 10 aUSDC
+    amount: 10_000_000n, // 10 USDC with 6 decimals
   })
   .signers([alice])
   .rpc();
@@ -226,7 +227,7 @@ Requests and executes the timelocked withdrawal flow. Fees are routed to `feeRec
 await client
   .requestWithdrawal({
     owner: alice.publicKey,
-    withdrawalDestination: aliceAUsdcAta,
+    withdrawalDestination: aliceUsdcAta,
     tokenId,
     amount: 2_000_000n,
   })
@@ -239,7 +240,7 @@ await client
   .executeWithdrawalTimelocked({
     tokenId,
     participantAccount: client.participantAddress(alice.publicKey),
-    withdrawalDestination: aliceAUsdcAta,
+    withdrawalDestination: aliceUsdcAta,
     feeRecipientTokenAccount,
   })
   .rpc();

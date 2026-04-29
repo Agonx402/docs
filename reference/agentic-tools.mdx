@@ -1,0 +1,105 @@
+---
+title: "Agentic Tools"
+description: "Skills, CLI, MCP, and LLM text for agents integrating Agon Protocol and Agon Gateway."
+---
+
+Agon publishes agent-facing tools in the [Agonx402/agon-gateway-agentic](https://github.com/Agonx402/agon-gateway-agentic) repository. The repo contains gateway tools, protocol tools, Codex-style skills, and LLM-readable docs.
+
+## Repository layout
+
+| Path | Publishes | Purpose |
+| --- | --- | --- |
+| `cli/` | `@agonx402/gateway-cli` | Discover gateway routes and call them from agent workflows. |
+| `mcp/` | `@agonx402/gateway-mcp` | MCP server for gateway route discovery and calls. |
+| `protocol-cli/` | `@agonx402/protocol-cli` | Read protocol state and prepare unsigned protocol actions. |
+| `protocol-mcp/` | `@agonx402/protocol-mcp` | MCP server for protocol read and prepare tools. |
+| `skills/agon-gateway/` | Codex-style skill | Gateway catalog, x402, and SIWX workflows. |
+| `skills/agon-protocol/` | Codex-style skill | Participants, balances, channels, settlement, withdrawals, and BLS caveats. |
+| `skills/agon-gateway-payment-channels/` | Codex-style skill | Channel-backed gateway calls using signed cumulative commitments. |
+
+## Live protocol defaults
+
+| Field | Value |
+| --- | --- |
+| Program ID | `3UyUFeNsUYPpM6hMRf7H8wg3MKEXQ82rqnsXhZrUwgSD` |
+| Cluster | `devnet` |
+| Chain ID | `1` |
+| Message domain | `a58a109a38f14cc27ef174135176cab3` |
+| Gateway-channel token | Official devnet USDC, mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
+
+The official devnet USDC `token_id` is resolved from the protocol `TokenRegistry` or from `AGON_PROTOCOL_DEVNET_USDC_TOKEN_ID`. Do not hardcode demo token IDs in agent integrations.
+
+## CLI packages
+
+```bash
+npx @agonx402/gateway-cli health
+npx @agonx402/gateway-cli catalog
+npx @agonx402/protocol-cli config
+npx @agonx402/protocol-cli token show
+npx @agonx402/protocol-cli participant show --owner <owner>
+npx @agonx402/protocol-cli channel headroom --payer-id <payer-id> --payee-id <payee-id> --latest-accepted <amount>
+```
+
+The protocol CLI is read + prepare only. It can prepare transactions and gateway commitment payloads, but it does not store private keys, sign messages, or broadcast transactions.
+
+## MCP packages
+
+Gateway MCP:
+
+```json
+{
+  "mcpServers": {
+    "agon-gateway": {
+      "command": "npx",
+      "args": ["-y", "@agonx402/gateway-mcp"]
+    }
+  }
+}
+```
+
+Protocol MCP:
+
+```json
+{
+  "mcpServers": {
+    "agon-protocol": {
+      "command": "npx",
+      "args": ["-y", "@agonx402/protocol-mcp"],
+      "env": {
+        "SOLANA_DEVNET_RPC_URL": "https://api.devnet.solana.com"
+      }
+    }
+  }
+}
+```
+
+The protocol MCP exposes the resource `agon://protocol/llm.txt`. Like the protocol CLI, it is read + prepare only and never signs or submits transactions.
+
+## LLM text
+
+| File | Scope |
+| --- | --- |
+| `llm.txt` | Gateway-focused short context for agent clients. |
+| `llms.txt` | Gateway-focused expanded context for agent clients. |
+| `protocol-mcp/llm.txt` | Protocol-focused short context, also exposed through MCP as `agon://protocol/llm.txt`. |
+| `protocol-mcp/llms.txt` | Protocol-focused expanded context. |
+
+## Payment-channel guardrails
+
+Gateway channel payments use signed cumulative commitments against locked channel collateral. For `/v1/agon-channel/...` routes, agents should:
+
+1. Open a channel to the gateway merchant participant.
+2. Lock official devnet USDC into that channel.
+3. Sign one cumulative commitment per request.
+4. Send `X-Agon-Request-Id` and `AGON-COMMITMENT` with the gateway call.
+
+Tokens SIWX routes remain auth-only and free. They do not use payment channels.
+
+## Protocol caveats
+
+- Participant withdrawals are instant on the live devnet deployment.
+- Unilateral channel unlocks take 72 hours.
+- Cooperative channel unlocks are immediate when both parties agree.
+- Agon BLS is Agon-specific. It is not a generic IETF hash-to-curve BLS ciphersuite, so clients must use the shared Agon implementation and test vectors.
+- BLS key rotation does not exist yet. If a BLS key is lost or compromised, the participant should migrate to a new participant identity for future BLS clearing.
+
